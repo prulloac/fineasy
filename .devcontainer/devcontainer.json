@@ -11,14 +11,16 @@
             "ghcr.io/devcontainers/features/git:1": {},
             "ghcr.io/devcontainers/features/github-cli:1": {},
             "ghcr.io/devcontainers/features/go:1": {},
-            "ghcr.io/prulloac/devcontainer-features/bun": {}
+            "ghcr.io/prulloac/devcontainer-features/bun:1": {}
     },
 
     // Use 'postCreateCommand' to run commands after the container is created.
-    //"postCreateCommand": "cp container.env.example .env && npm install",
-    "postAttachCommand": {
-    	"git-config": "git config --global --add safe.directory /workspace/fineasy"
+    "postCreateCommand": {
+        "git-config": "git config --global --add safe.directory /workspace/fineasy",
+        "copy-backend-env": "cp backend/container.env.example backend/.env",
     },
+    // "postAttachCommand": {
+    // },
 
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
     // This can be used to network with other containers or with the host.
