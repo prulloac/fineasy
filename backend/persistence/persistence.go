@@ -8,10 +8,13 @@ import (
 	godotenv "github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
-	"github.com/prulloac/fineasy/persistence/categories"
 )
 
-func Connection() *sql.DB {
+type Persistence struct {
+	db *sql.DB
+}
+
+func Connect() *Persistence {
 	err := godotenv.Load(".env")
 
 	if err != nil {
@@ -30,9 +33,18 @@ func Connection() *sql.DB {
 
 	fmt.Println("Database Successfully connected!")
 
-	return db
+	return &Persistence{db}
 }
 
-func VerifySchema(db *sql.DB) {
-	categories.CreateCategoriesTable(db)
+func (p *Persistence) Close() {
+	p.db.Close()
+	fmt.Println("Database Successfully disconnected!")
+}
+
+func (p *Persistence) VerifySchema() {
+	p.CreateCategoriesTable()
+}
+
+func (p *Persistence) GetDB() *sql.DB {
+	return p.db
 }
