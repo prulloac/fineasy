@@ -5,7 +5,10 @@ CREATE TABLE IF NOT EXISTS categories (
     icon VARCHAR(255),
     color VARCHAR(255),
     description TEXT,
-    deleted_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ord INTEGER NOT NULL DEFAULT 0
+    group_id INTEGER NOT NULL
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_name ON categories (name);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_order ON categories (ord);
+CREATE INDEX IF NOT EXISTS idx_categories_group_id ON categories (group_id);

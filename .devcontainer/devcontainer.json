@@ -18,6 +18,7 @@
     "postCreateCommand": {
         "git-config": "git config --global --add safe.directory /workspace/fineasy",
         "copy-backend-env": "cp backend/container.env.example backend/.env",
+        "psql": "sh .devcontainer/psql.sh",
     },
     // "postAttachCommand": {
     // },
@@ -40,7 +41,8 @@
         },
         "vscode": {
             "extensions": [
-                "bierner.github-markdown-preview"
+                "bierner.github-markdown-preview",
+                "ckolkman.vscode-postgres"
             ]
         }
     },

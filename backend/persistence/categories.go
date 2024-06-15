@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"time"
 )
 
 type Category struct {
@@ -13,9 +12,8 @@ type Category struct {
 	Icon        string
 	Color       string
 	Description string
-	DeletedAt   sql.NullTime
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	Order       int
+	GroupID     int
 }
 
 func (p *Persistence) CreateCategoriesTable() {
@@ -30,10 +28,18 @@ func (p *Persistence) CreateCategoriesTable() {
 func (p *Persistence) InsertCategory(category Category) error {
 	// check if the category already exists regardless of the icon, color, and description
 	var id int
-	err := p.db.QueryRow("SELECT id FROM categories WHERE name = $1", category.Name).Scan(&id)
+	err := p.db.QueryRow(`
+	SELECT 
+		id 
+	FROM categories 
+	WHERE name = $1`, category.Name).Scan(&id)
 
 	if err == sql.ErrNoRows {
-		_, err := p.db.Exec("INSERT INTO categories (name, icon, color, description) VALUES ($1, $2, $3, $4)", category.Name, category.Icon, category.Color, category.Description)
+		_, err := p.db.Exec(`
+		INSERT INTO categories 
+		(name, icon, color, description, ord, group_id) VALUES ($1, $2, $3, $4, $5, $6)`,
+			category.Name, category.Icon, category.Color,
+			category.Description, category.Order, category.GroupID)
 		if err != nil {
 			return err
 		}
@@ -43,8 +49,20 @@ func (p *Persistence) InsertCategory(category Category) error {
 	return nil
 }
 
-func (p *Persistence) GetCategories() ([]Category, error) {
-	rows, err := p.db.Query("SELECT id, name, icon, color, description FROM categories WHERE deleted_at is NULL")
+func (p *Persistence) GetCategories(group_id int) ([]Category, error) {
+	rows, err := p.db.Query(`
+	SELECT 
+		id, 
+		name, 
+		icon, 
+		color, 
+		description, 
+		ord,
+		group_id
+	FROM categories
+	WHERE group_id = $1
+	ORDER BY ord ASC
+	`, group_id)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +72,8 @@ func (p *Persistence) GetCategories() ([]Category, error) {
 	for rows.Next() {
 		var category Category
 		err := rows.Scan(&category.ID, &category.Name,
-			&category.Icon, &category.Color, &category.Description)
+			&category.Icon, &category.Color, &category.Description,
+			&category.Order, &category.GroupID)
 		if err != nil {
 			return nil, err
 		}
@@ -65,8 +84,19 @@ func (p *Persistence) GetCategories() ([]Category, error) {
 
 func (p *Persistence) GetCategory(id int) (Category, error) {
 	var category Category
-	err := p.db.QueryRow("SELECT id, name, icon, color, description, deleted_at, created_at, updated_at FROM categories WHERE id = $1", id).Scan(&category.ID, &category.Name,
-		&category.Icon, &category.Color, &category.Description, &category.DeletedAt, &category.CreatedAt, &category.UpdatedAt)
+	err := p.db.QueryRow(`
+	SELECT 
+		id, 
+		name, 
+		icon, 
+		color, 
+		description, 
+		ord, 
+		group_id 
+	FROM categories 
+	WHERE id = $1
+	`, id).Scan(&category.ID, &category.Name, &category.Icon,
+		&category.Color, &category.Description, &category.Order, &category.GroupID)
 	if err != nil {
 		return category, err
 	}
@@ -74,31 +104,18 @@ func (p *Persistence) GetCategory(id int) (Category, error) {
 }
 
 func (p *Persistence) UpdateCategory(category Category) error {
-	_, err := p.db.Exec("UPDATE categories SET name = $1, icon = $2, color = $3, description = $4 WHERE id = $5", category.Name, category.Icon, category.Color, category.Description, category.ID)
+	_, err := p.db.Exec(`
+	UPDATE categories 
+	SET 
+		name = $1, 
+		icon = $2, 
+		color = $3, 
+		description = $4, 
+		ord = $5 
+	WHERE id = $6`,
+		category.Name, category.Icon, category.Color, category.Description, category.Order, category.ID)
 	if err != nil {
 		return err
 	}
 	return nil
-}
-
-func (p *Persistence) DeleteCategory(id int) error {
-	// use soft delete
-	_, err := p.db.Exec("UPDATE categories SET deleted_at = NOW() WHERE id = $1", id)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (p *Persistence) RestoreCategory(id int) (Category, error) {
-	var c Category
-	_, err := p.db.Exec("UPDATE categories SET deleted_at = NULL WHERE id = $1", id)
-	if err != nil {
-		return c, err
-	}
-	c, err = p.GetCategory(id)
-	if err != nil {
-		return c, err
-	}
-	return c, nil
 }

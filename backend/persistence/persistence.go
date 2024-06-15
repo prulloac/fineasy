@@ -43,8 +43,5 @@ func (p *Persistence) Close() {
 
 func (p *Persistence) VerifySchema() {
 	p.CreateCategoriesTable()
-}
-
-func (p *Persistence) GetDB() *sql.DB {
-	return p.db
+	p.CreateCurrenciesTable()
 }
