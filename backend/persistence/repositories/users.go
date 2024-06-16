@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/prulloac/fineasy/persistence/entity"
+	"github.com/prulloac/fineasy/persistence/entity"
 )
 
 type UserRepository struct {
-	DB *sql.DB
+	db *sql.DB
+}
+
+func NewUserRepository(db *sql.DB) *UserRepository {
+	return &UserRepository{db}
 }
 
 func (u *UserRepository) CreateUsersTable() {
 	data, _ := os.ReadFile("persistence/schema/users.sql")
-	_, err := u.DB.Exec(string(data))
+	_, err := u.db.Exec(string(data))
 	if err != nil {
 		fmt.Println("Error creating users table!")
 		panic(err)
@@ -22,10 +26,10 @@ func (u *UserRepository) CreateUsersTable() {
 	fmt.Println("Users table created!")
 }
 
-func (u *UserRepository) InsertUser(user User) error {
+func (u *UserRepository) InsertUser(user entity.User) error {
 	// check if the user already exists
 	var id int
-	err := u.DB.QueryRow(`
+	err := u.db.QueryRow(`
 	SELECT
 		id
 	FROM users
@@ -33,7 +37,7 @@ func (u *UserRepository) InsertUser(user User) error {
 		user.Email).Scan(&id)
 
 	if err == sql.ErrNoRows {
-		_, err := u.DB.Exec(`
+		_, err := u.db.Exec(`
 		INSERT INTO users
 		(username, email) VALUES ($1, $2)`,
 			user.Username,
@@ -47,8 +51,8 @@ func (u *UserRepository) InsertUser(user User) error {
 	return nil
 }
 
-func (u *UserRepository) GetUsers() ([]User, error) {
-	rows, err := u.DB.Query(`
+func (u *UserRepository) GetUsers() ([]entity.User, error) {
+	rows, err := u.db.Query(`
 	SELECT
 		id,
 		username,
@@ -61,9 +65,9 @@ func (u *UserRepository) GetUsers() ([]User, error) {
 	}
 	defer rows.Close()
 
-	var users []User
+	var users []entity.User
 	for rows.Next() {
-		var user User
+		var user entity.User
 		err := rows.Scan(
 			&user.ID,
 			&user.Username,
@@ -78,9 +82,9 @@ func (u *UserRepository) GetUsers() ([]User, error) {
 	return users, nil
 }
 
-func (u *UserRepository) GetUser(id int) (User, error) {
-	var user User
-	err := u.DB.QueryRow(`
+func (u *UserRepository) GetUser(id int) (entity.User, error) {
+	var user entity.User
+	err := u.db.QueryRow(`
 	SELECT
 		id,
 		username,
@@ -100,8 +104,8 @@ func (u *UserRepository) GetUser(id int) (User, error) {
 	return user, nil
 }
 
-func (u *UserRepository) UpdateUser(user User) error {
-	_, err := u.DB.Exec(`
+func (u *UserRepository) UpdateUser(user entity.User) error {
+	_, err := u.db.Exec(`
 	UPDATE users
 	SET username = $1, email = $2, updated_at = CURRENT_TIMESTAMP
 	WHERE id = $3`,
@@ -114,9 +118,9 @@ func (u *UserRepository) UpdateUser(user User) error {
 	return nil
 }
 
-func (u *UserRepository) GetUserByEmail(email string) (User, error) {
-	var user User
-	err := u.DB.QueryRow(`
+func (u *UserRepository) GetUserByEmail(email string) (entity.User, error) {
+	var user entity.User
+	err := u.db.QueryRow(`
 	SELECT
 		id,
 		username,

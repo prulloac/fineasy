@@ -7,11 +7,33 @@
 
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
-            "ghcr.io/devcontainers/features/common-utils:2": {},
-            "ghcr.io/devcontainers/features/git:1": {},
-            "ghcr.io/devcontainers/features/github-cli:1": {},
-            "ghcr.io/devcontainers/features/go:1": {},
-            "ghcr.io/prulloac/devcontainer-features/bun:1": {}
+            "ghcr.io/devcontainers/features/common-utils:2": {
+                "installZsh": true,
+                "configureZshAsDefaultShell": true,
+                "installOhMyZsh": true,
+                "installOhMyZshConfig": true,
+                "upgradePackages": true,
+                "username": "automatic",
+                "userUid": "automatic",
+                "userGid": "automatic"
+            },
+            "ghcr.io/devcontainers/features/git:1": {
+                "ppa": true,
+                "version": "latest"
+            },
+            "ghcr.io/devcontainers/features/github-cli:1": {
+                "installDirectlyFromGitHubRelease": true,
+                "version": "latest"
+            },
+            "ghcr.io/devcontainers/features/go:1": {
+                "version": "latest"
+            },
+            "ghcr.io/prulloac/devcontainer-features/bun:1": {},
+            "ghcr.io/devcontainers/features/docker-in-docker:2": {
+                "installDockerBuildx": true,
+                "version": "latest",
+                "dockerDashComposeVersion": "latest"
+            }
     },
 
     // Use 'postCreateCommand' to run commands after the container is created.
@@ -42,7 +64,9 @@
         "vscode": {
             "extensions": [
                 "bierner.github-markdown-preview",
-                "ckolkman.vscode-postgres"
+                "ckolkman.vscode-postgres",
+                "ms-azuretools.vscode-docker",
+                "ms-vscode.makefile-tools"
             ]
         }
     },

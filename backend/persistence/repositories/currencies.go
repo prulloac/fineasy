@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/prulloac/fineasy/persistence/entity"
+	"github.com/prulloac/fineasy/persistence/entity"
 )
 
 type CurrencyRepository struct {
-	DB *sql.DB
+	db *sql.DB
+}
+
+func NewCurrencyRepository(db *sql.DB) *CurrencyRepository {
+	return &CurrencyRepository{db}
 }
 
 func (c *CurrencyRepository) CreateCurrenciesTable() {
 	data, _ := os.ReadFile("persistence/schema/currencies.sql")
-	_, err := c.DB.Exec(string(data))
+	_, err := c.db.Exec(string(data))
 	if err != nil {
 		fmt.Println("Error creating currencies table!")
 		panic(err)
@@ -22,10 +26,10 @@ func (c *CurrencyRepository) CreateCurrenciesTable() {
 	fmt.Println("Currencies table created!")
 }
 
-func (c *CurrencyRepository) InsertCurrency(currency Currency) error {
+func (c *CurrencyRepository) InsertCurrency(currency entity.Currency) error {
 	// check if the currency already exists in the database
 	var id int
-	err := c.DB.QueryRow(`
+	err := c.db.QueryRow(`
 	SELECT
 		id 
 	FROM currencies 
@@ -33,7 +37,7 @@ func (c *CurrencyRepository) InsertCurrency(currency Currency) error {
 	`, currency.Code).Scan(&id)
 
 	if err == sql.ErrNoRows {
-		_, err := c.DB.Exec(`
+		_, err := c.db.Exec(`
 		INSERT INTO currencies 
 		(code, symbol, name) VALUES ($1, $2, $3)
 		`, currency.Code, currency.Symbol, currency.Name)
@@ -46,8 +50,8 @@ func (c *CurrencyRepository) InsertCurrency(currency Currency) error {
 	return nil
 }
 
-func (c *CurrencyRepository) GetCurrencies() ([]Currency, error) {
-	rows, err := c.DB.Query(`
+func (c *CurrencyRepository) GetCurrencies() ([]entity.Currency, error) {
+	rows, err := c.db.Query(`
 	SELECT 
 		id, 
 		code, 
@@ -60,9 +64,9 @@ func (c *CurrencyRepository) GetCurrencies() ([]Currency, error) {
 	}
 	defer rows.Close()
 
-	var currencies []Currency
+	var currencies []entity.Currency
 	for rows.Next() {
-		var currency Currency
+		var currency entity.Currency
 		err := rows.Scan(&currency.ID, &currency.Code, &currency.Symbol, &currency.Name)
 		if err != nil {
 			return nil, err
@@ -72,9 +76,9 @@ func (c *CurrencyRepository) GetCurrencies() ([]Currency, error) {
 	return currencies, nil
 }
 
-func (c *CurrencyRepository) GetCurrency(id int) (Currency, error) {
-	var currency Currency
-	err := c.DB.QueryRow(`
+func (c *CurrencyRepository) GetCurrency(id int) (entity.Currency, error) {
+	var currency entity.Currency
+	err := c.db.QueryRow(`
 	SELECT 
 		id, 
 		code, 
@@ -89,8 +93,8 @@ func (c *CurrencyRepository) GetCurrency(id int) (Currency, error) {
 	return currency, nil
 }
 
-func (c *CurrencyRepository) UpdateCurrency(currency Currency) error {
-	_, err := c.DB.Exec(`
+func (c *CurrencyRepository) UpdateCurrency(currency entity.Currency) error {
+	_, err := c.db.Exec(`
 	UPDATE currencies 
 	SET 
 		code = $1, 

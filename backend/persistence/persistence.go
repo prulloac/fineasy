@@ -8,54 +8,39 @@ import (
 	godotenv "github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
-	. "github.com/prulloac/fineasy/persistence/repositories"
+	r "github.com/prulloac/fineasy/persistence/repositories"
 )
 
 type Persistence struct {
-	DB                     *sql.DB
-	userRepository         *UserRepository
-	categoriesRepository   *CategoriesRepository
-	currencyRepository     *CurrencyRepository
-	exchangeRateRepository *ExchangeRateRepository
-	groupRepository        *GroupRepository
+	db                     *sql.DB
+	userRepository         *r.UserRepository
+	categoriesRepository   *r.CategoriesRepository
+	currencyRepository     *r.CurrencyRepository
+	exchangeRateRepository *r.ExchangeRateRepository
+	groupRepository        *r.GroupRepository
 }
 
-var instance *Persistence
-
-func (p *Persistence) GetUserRepository() *UserRepository {
+func (p *Persistence) GetUserRepository() *r.UserRepository {
 	return p.userRepository
 }
 
-func (p *Persistence) GetCategoriesRepository() *CategoriesRepository {
+func (p *Persistence) GetCategoriesRepository() *r.CategoriesRepository {
 	return p.categoriesRepository
 }
 
-func (p *Persistence) GetCurrencyRepository() *CurrencyRepository {
+func (p *Persistence) GetCurrencyRepository() *r.CurrencyRepository {
 	return p.currencyRepository
 }
 
-func (p *Persistence) GetExchangeRateRepository() *ExchangeRateRepository {
+func (p *Persistence) GetExchangeRateRepository() *r.ExchangeRateRepository {
 	return p.exchangeRateRepository
 }
 
-func (p *Persistence) GetGroupRepository() *GroupRepository {
+func (p *Persistence) GetGroupRepository() *r.GroupRepository {
 	return p.groupRepository
 }
 
-func NewPersistence(db *sql.DB) *Persistence {
-	return &Persistence{db,
-		&UserRepository{db},
-		&CategoriesRepository{db},
-		&CurrencyRepository{db},
-		&ExchangeRateRepository{db},
-		&GroupRepository{db},
-	}
-}
-
 func Connect() *Persistence {
-	if instance != nil {
-		return instance
-	}
 	err := godotenv.Load(".env")
 
 	if err != nil {
@@ -74,12 +59,18 @@ func Connect() *Persistence {
 
 	fmt.Println("Database Successfully connected!")
 
-	instance = NewPersistence(db)
+	instance := &Persistence{}
+	instance.db = db
+	instance.userRepository = r.NewUserRepository(db)
+	instance.categoriesRepository = r.NewCategoriesRepository(db)
+	instance.currencyRepository = r.NewCurrencyRepository(db)
+	instance.exchangeRateRepository = r.NewExchangeRateRepository(db)
+	instance.groupRepository = r.NewGroupRepository(db)
 	return instance
 }
 
 func (p *Persistence) Close() {
-	p.DB.Close()
+	p.db.Close()
 	fmt.Println("Database Successfully disconnected!")
 }
 

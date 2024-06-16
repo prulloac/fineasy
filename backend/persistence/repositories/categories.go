@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/prulloac/fineasy/persistence/entity"
+	"github.com/prulloac/fineasy/persistence/entity"
 )
 
 type CategoriesRepository struct {
-	DB *sql.DB
+	db *sql.DB
+}
+
+func NewCategoriesRepository(db *sql.DB) *CategoriesRepository {
+	return &CategoriesRepository{db}
 }
 
 func (c *CategoriesRepository) CreateCategoriesTable() {
 	data, _ := os.ReadFile("persistence/schema/categories.sql")
-	_, err := c.DB.Exec(string(data))
+	_, err := c.db.Exec(string(data))
 	if err != nil {
 		fmt.Println("Error creating categories table!")
 		panic(err)
@@ -22,17 +26,17 @@ func (c *CategoriesRepository) CreateCategoriesTable() {
 	fmt.Println("Categories table created!")
 }
 
-func (c *CategoriesRepository) InsertCategory(category Category) error {
+func (c *CategoriesRepository) InsertCategory(category entity.Category) error {
 	// check if the category already exists regardless of the icon, color, and description
 	var id int
-	err := c.DB.QueryRow(`
+	err := c.db.QueryRow(`
 	SELECT 
 		id 
 	FROM categories 
 	WHERE name = $1`, category.Name).Scan(&id)
 
 	if err == sql.ErrNoRows {
-		_, err := c.DB.Exec(`
+		_, err := c.db.Exec(`
 		INSERT INTO categories 
 		(name, icon, color, description, ord, group_id) VALUES ($1, $2, $3, $4, $5, $6)`,
 			category.Name, category.Icon, category.Color,
@@ -46,8 +50,8 @@ func (c *CategoriesRepository) InsertCategory(category Category) error {
 	return nil
 }
 
-func (c *CategoriesRepository) GetCategories(group_id int) ([]Category, error) {
-	rows, err := c.DB.Query(`
+func (c *CategoriesRepository) GetCategories(groupID int) ([]entity.Category, error) {
+	rows, err := c.db.Query(`
 	SELECT 
 		id, 
 		name, 
@@ -59,15 +63,15 @@ func (c *CategoriesRepository) GetCategories(group_id int) ([]Category, error) {
 	FROM categories
 	WHERE group_id = $1
 	ORDER BY ord ASC
-	`, group_id)
+	`, groupID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var categories []Category
+	var categories []entity.Category
 	for rows.Next() {
-		var category Category
+		var category entity.Category
 		err := rows.Scan(&category.ID, &category.Name,
 			&category.Icon, &category.Color, &category.Description,
 			&category.Order, &category.GroupID)
@@ -79,9 +83,9 @@ func (c *CategoriesRepository) GetCategories(group_id int) ([]Category, error) {
 	return categories, nil
 }
 
-func (c *CategoriesRepository) GetCategory(id int) (Category, error) {
-	var category Category
-	err := c.DB.QueryRow(`
+func (c *CategoriesRepository) GetCategory(id int) (entity.Category, error) {
+	var category entity.Category
+	err := c.db.QueryRow(`
 	SELECT 
 		id, 
 		name, 
@@ -100,8 +104,8 @@ func (c *CategoriesRepository) GetCategory(id int) (Category, error) {
 	return category, nil
 }
 
-func (c *CategoriesRepository) UpdateCategory(category Category) error {
-	_, err := c.DB.Exec(`
+func (c *CategoriesRepository) UpdateCategory(category entity.Category) error {
+	_, err := c.db.Exec(`
 	UPDATE categories 
 	SET 
 		name = $1, 

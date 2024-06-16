@@ -5,16 +5,20 @@ import (
 	"fmt"
 	"os"
 
-	. "github.com/prulloac/fineasy/persistence/entity"
+	"github.com/prulloac/fineasy/persistence/entity"
 )
 
 type GroupRepository struct {
-	DB *sql.DB
+	db *sql.DB
+}
+
+func NewGroupRepository(db *sql.DB) *GroupRepository {
+	return &GroupRepository{db}
 }
 
 func (g *GroupRepository) CreateGroupsTable() {
 	data, _ := os.ReadFile("persistence/schema/groups.sql")
-	_, err := g.DB.Exec(string(data))
+	_, err := g.db.Exec(string(data))
 	if err != nil {
 		fmt.Println("Error creating groups table!")
 		panic(err)
@@ -22,17 +26,17 @@ func (g *GroupRepository) CreateGroupsTable() {
 	fmt.Println("Categories table created!")
 }
 
-func (g *GroupRepository) InsertGroup(group Group) error {
+func (g *GroupRepository) InsertGroup(group entity.Group) error {
 	// check if the group already exists
 	var id int
-	err := g.DB.QueryRow(`
+	err := g.db.QueryRow(`
 	SELECT
 		id
 	FROM groups
 	WHERE name = $1`, group.Name).Scan(&id)
 
 	if err == sql.ErrNoRows {
-		_, err := g.DB.Exec(`
+		_, err := g.db.Exec(`
 		INSERT INTO groups
 		(name, created_by,) VALUES ($1, $2)`,
 			group.Name, group.CreatedBy)
@@ -45,24 +49,24 @@ func (g *GroupRepository) InsertGroup(group Group) error {
 	return nil
 }
 
-func (g *GroupRepository) GetGroups(user_id int) ([]Group, error) {
-	rows, err := g.DB.Query(`
+func (g *GroupRepository) GetGroups(userID int) ([]entity.Group, error) {
+	rows, err := g.db.Query(`
 	SELECT 
 		id,
 		name,
 		created_by,
 		created_at
 	FROM groups
-	WHERE created_by = $1`, user_id)
+	WHERE created_by = $1`, userID)
 
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var groups []Group
+	var groups []entity.Group
 	for rows.Next() {
-		var group Group
+		var group entity.Group
 		err := rows.Scan(&group.ID, &group.Name, &group.CreatedBy, &group.CreatedAt)
 		if err != nil {
 			return nil, err
@@ -72,9 +76,9 @@ func (g *GroupRepository) GetGroups(user_id int) ([]Group, error) {
 	return groups, nil
 }
 
-func (g *GroupRepository) GetGroup(id int) (Group, error) {
-	var group Group
-	err := g.DB.QueryRow(`
+func (g *GroupRepository) GetGroup(id int) (entity.Group, error) {
+	var group entity.Group
+	err := g.db.QueryRow(`
 	SELECT 
 		id,
 		name,
@@ -89,8 +93,8 @@ func (g *GroupRepository) GetGroup(id int) (Group, error) {
 	return group, nil
 }
 
-func (g *GroupRepository) UpdateGroup(group Group) error {
-	_, err := g.DB.Exec(`
+func (g *GroupRepository) UpdateGroup(group entity.Group) error {
+	_, err := g.db.Exec(`
 	UPDATE groups
 	SET name = $1
 	WHERE id = $2`, group.Name, group.ID)
