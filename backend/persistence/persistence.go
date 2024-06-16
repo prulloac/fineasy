@@ -8,13 +8,54 @@ import (
 	godotenv "github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
+	. "github.com/prulloac/fineasy/persistence/repositories"
 )
 
 type Persistence struct {
-	db *sql.DB
+	DB                     *sql.DB
+	userRepository         *UserRepository
+	categoriesRepository   *CategoriesRepository
+	currencyRepository     *CurrencyRepository
+	exchangeRateRepository *ExchangeRateRepository
+	groupRepository        *GroupRepository
+}
+
+var instance *Persistence
+
+func (p *Persistence) GetUserRepository() *UserRepository {
+	return p.userRepository
+}
+
+func (p *Persistence) GetCategoriesRepository() *CategoriesRepository {
+	return p.categoriesRepository
+}
+
+func (p *Persistence) GetCurrencyRepository() *CurrencyRepository {
+	return p.currencyRepository
+}
+
+func (p *Persistence) GetExchangeRateRepository() *ExchangeRateRepository {
+	return p.exchangeRateRepository
+}
+
+func (p *Persistence) GetGroupRepository() *GroupRepository {
+	return p.groupRepository
+}
+
+func NewPersistence(db *sql.DB) *Persistence {
+	return &Persistence{db,
+		&UserRepository{db},
+		&CategoriesRepository{db},
+		&CurrencyRepository{db},
+		&ExchangeRateRepository{db},
+		&GroupRepository{db},
+	}
 }
 
 func Connect() *Persistence {
+	if instance != nil {
+		return instance
+	}
 	err := godotenv.Load(".env")
 
 	if err != nil {
@@ -33,15 +74,21 @@ func Connect() *Persistence {
 
 	fmt.Println("Database Successfully connected!")
 
-	return &Persistence{db}
+	instance = NewPersistence(db)
+	return instance
 }
 
 func (p *Persistence) Close() {
-	p.db.Close()
+	p.DB.Close()
 	fmt.Println("Database Successfully disconnected!")
 }
 
 func (p *Persistence) VerifySchema() {
-	p.CreateCategoriesTable()
-	p.CreateCurrenciesTable()
+	fmt.Println("Verifying schema...")
+	p.GetUserRepository().CreateUsersTable()
+	p.GetCurrencyRepository().CreateCurrenciesTable()
+	p.GetGroupRepository().CreateGroupsTable()
+	p.GetExchangeRateRepository().CreateExchangeRatesTable()
+	p.GetCategoriesRepository().CreateCategoriesTable()
+	fmt.Println("Schema verified!")
 }

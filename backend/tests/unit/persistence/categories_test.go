@@ -1,10 +1,13 @@
-package persistence
+package persistence__test
 
 import (
 	"database/sql"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+
+	"github.com/prulloac/fineasy/persistence"
+	. "github.com/prulloac/fineasy/persistence/entity"
 )
 
 func TestInsertCategory(t *testing.T) {
@@ -21,9 +24,8 @@ func TestInsertCategory(t *testing.T) {
 		WithArgs(category.Name, category.Icon, category.Color, category.Description, category.Order, category.GroupID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	var p = Persistence{}
-	p.db = db
-	err = p.InsertCategory(category)
+	var p = persistence.NewPersistence(db)
+	err = p.GetCategoriesRepository().InsertCategory(category)
 
 	if err != nil {
 		t.Errorf("error was not expected while inserting category: %s", err)
@@ -46,9 +48,8 @@ func TestGetCategories(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "icon", "color", "description", "order", "group_id"}).
 			AddRow(1, category.Name, category.Icon, category.Color, category.Description, category.Order, category.GroupID))
 
-	var p = Persistence{}
-	p.db = db
-	r, err := p.GetCategories(category.GroupID)
+	var p = persistence.NewPersistence(db)
+	r, err := p.GetCategoriesRepository().GetCategories(category.GroupID)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting categories: %s", err)
@@ -78,9 +79,8 @@ func TestGetCategory(t *testing.T) {
 			AddRow(1, category.Name, category.Icon, category.Color, category.Description, category.Order, category.GroupID),
 		)
 
-	var p = Persistence{}
-	p.db = db
-	r, err := p.GetCategory(1)
+	var p = persistence.NewPersistence(db)
+	r, err := p.GetCategoriesRepository().GetCategory(1)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting category: %s", err)
@@ -106,9 +106,8 @@ func TestUpdateCategory(t *testing.T) {
 		WithArgs(category.Name, category.Icon, category.Color, category.Description, category.Order, 1).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	var p = Persistence{}
-	p.db = db
-	err = p.UpdateCategory(category)
+	var p = persistence.NewPersistence(db)
+	err = p.GetCategoriesRepository().UpdateCategory(category)
 
 	if err != nil {
 		t.Errorf("error was not expected while updating category: %s", err)

@@ -15,20 +15,38 @@ erDiagram
         id int
         name varchar
         created_by int
+        created_at datetime
+        updated_at datetime
+    }
+
+    USER_GROUPS {
+        id int
+        user_id int
+        group_id int
+    }
+
+    ACCOUNTS {
+        id int
+        created_by int
+        group_id int
+        currency_id int
+        balance float
+        name varchar
+        created_at datetime
+        updated_at datetime
     }
 
     BUDGETS {
         id int
-        category_id int
+        name varchar
+        account_id int
         currency_id int
         amount float
+        created_by int
         start_date date
         end_date date
-    }
-
-    USER_GROUPS {
-        user_id int
-        group_id int
+        created_at datetime
+        updated_at datetime
     }
 
     CATEGORIES {
@@ -76,21 +94,12 @@ erDiagram
         name varchar
     }
 
-    ACCOUNTS {
-        id int
-        user_id int
-        group_id int
-        currency_id int
-        balance float
-        name varchar
-    }
-
     USERS ||--|{ USER_GROUPS : contains
     GROUPS ||--|{ USER_GROUPS : contains
     GROUPS ||--|{ ACCOUNTS : contains
     GROUPS ||--|{ EXCHANGE_RATES : contains    
     GROUPS ||--|{ CATEGORIES : contains
-    GROUPS ||--|{ BUDGETS : contains
+    ACCOUNTS ||--|{ BUDGETS : contains
     CATEGORIES ||--|{ TRANSACTIONS : contains
     CURRENCIES ||--|{ TRANSACTIONS : contains
     CURRENCIES ||--|{ EXCHANGE_RATES : contains

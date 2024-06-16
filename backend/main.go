@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
+	"github.com/prulloac/fineasy/api"
 	"github.com/prulloac/fineasy/persistence"
-	"github.com/prulloac/fineasy/routes"
 )
 
 func main() {
@@ -12,5 +12,5 @@ func main() {
 	defer p.Close()
 	p.VerifySchema()
 	fmt.Println("Server is running...")
-	routes.Run()
+	api.Run()
 }

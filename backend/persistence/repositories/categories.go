@@ -1,41 +1,38 @@
-package persistence
+package repositories
 
 import (
 	"database/sql"
 	"fmt"
 	"os"
+
+	. "github.com/prulloac/fineasy/persistence/entity"
 )
 
-type Category struct {
-	ID          int
-	Name        string
-	Icon        string
-	Color       string
-	Description string
-	Order       int
-	GroupID     int
+type CategoriesRepository struct {
+	DB *sql.DB
 }
 
-func (p *Persistence) CreateCategoriesTable() {
+func (c *CategoriesRepository) CreateCategoriesTable() {
 	data, _ := os.ReadFile("persistence/schema/categories.sql")
-	_, err := p.db.Exec(string(data))
+	_, err := c.DB.Exec(string(data))
 	if err != nil {
+		fmt.Println("Error creating categories table!")
 		panic(err)
 	}
 	fmt.Println("Categories table created!")
 }
 
-func (p *Persistence) InsertCategory(category Category) error {
+func (c *CategoriesRepository) InsertCategory(category Category) error {
 	// check if the category already exists regardless of the icon, color, and description
 	var id int
-	err := p.db.QueryRow(`
+	err := c.DB.QueryRow(`
 	SELECT 
 		id 
 	FROM categories 
 	WHERE name = $1`, category.Name).Scan(&id)
 
 	if err == sql.ErrNoRows {
-		_, err := p.db.Exec(`
+		_, err := c.DB.Exec(`
 		INSERT INTO categories 
 		(name, icon, color, description, ord, group_id) VALUES ($1, $2, $3, $4, $5, $6)`,
 			category.Name, category.Icon, category.Color,
@@ -49,8 +46,8 @@ func (p *Persistence) InsertCategory(category Category) error {
 	return nil
 }
 
-func (p *Persistence) GetCategories(group_id int) ([]Category, error) {
-	rows, err := p.db.Query(`
+func (c *CategoriesRepository) GetCategories(group_id int) ([]Category, error) {
+	rows, err := c.DB.Query(`
 	SELECT 
 		id, 
 		name, 
@@ -82,9 +79,9 @@ func (p *Persistence) GetCategories(group_id int) ([]Category, error) {
 	return categories, nil
 }
 
-func (p *Persistence) GetCategory(id int) (Category, error) {
+func (c *CategoriesRepository) GetCategory(id int) (Category, error) {
 	var category Category
-	err := p.db.QueryRow(`
+	err := c.DB.QueryRow(`
 	SELECT 
 		id, 
 		name, 
@@ -103,8 +100,8 @@ func (p *Persistence) GetCategory(id int) (Category, error) {
 	return category, nil
 }
 
-func (p *Persistence) UpdateCategory(category Category) error {
-	_, err := p.db.Exec(`
+func (c *CategoriesRepository) UpdateCategory(category Category) error {
+	_, err := c.DB.Exec(`
 	UPDATE categories 
 	SET 
 		name = $1, 

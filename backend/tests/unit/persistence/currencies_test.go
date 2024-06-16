@@ -1,11 +1,12 @@
-package persistence
+package persistence__test
 
 import (
 	"database/sql"
 	"testing"
-	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/prulloac/fineasy/persistence"
+	. "github.com/prulloac/fineasy/persistence/entity"
 )
 
 func TestInsertCurrency(t *testing.T) {
@@ -22,9 +23,8 @@ func TestInsertCurrency(t *testing.T) {
 		WithArgs(currency.Code, currency.Symbol, currency.Name).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	var p = Persistence{}
-	p.db = db
-	err = p.InsertCurrency(currency)
+	var p = persistence.NewPersistence(db)
+	err = p.GetCurrencyRepository().InsertCurrency(currency)
 
 	if err != nil {
 		t.Errorf("error was not expected while inserting currency: %s", err)
@@ -46,9 +46,8 @@ func TestGetCurrencies(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id", "code", "symbol", "name"}).
 			AddRow(1, currency.Code, currency.Symbol, currency.Name))
 
-	var p = Persistence{}
-	p.db = db
-	r, err := p.GetCurrencies()
+	var p = persistence.NewPersistence(db)
+	r, err := p.GetCurrencyRepository().GetCurrencies()
 
 	if err != nil {
 		t.Errorf("error was not expected while getting currencies: %s", err)
@@ -83,9 +82,8 @@ func TestGetCurrency(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id", "code", "symbol", "name"}).
 			AddRow(currency.ID, currency.Code, currency.Symbol, currency.Name))
 
-	var p = Persistence{}
-	p.db = db
-	r, err := p.GetCurrency(currency.ID)
+	var p = persistence.NewPersistence(db)
+	r, err := p.GetCurrencyRepository().GetCurrency(currency.ID)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting currency: %s", err)
@@ -120,9 +118,8 @@ func TestUpdateCurrency(t *testing.T) {
 		WithArgs(currency.Code, currency.Symbol, currency.Name, currency.ID).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	var p = Persistence{}
-	p.db = db
-	err = p.UpdateCurrency(currency)
+	var p = persistence.NewPersistence(db)
+	err = p.GetCurrencyRepository().UpdateCurrency(currency)
 
 	if err != nil {
 		t.Errorf("error was not expected while updating currency: %s", err)
@@ -130,67 +127,5 @@ func TestUpdateCurrency(t *testing.T) {
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestInsertDefaultExchangeRate(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-
-	exchangeRate := ExchangeRate{CurrencyID: 1, GroupID: 1, Rate: 1.0, Date: time.Now()}
-	mock.ExpectExec("INSERT INTO default_exchange_rates").
-		WithArgs(exchangeRate.CurrencyID, exchangeRate.GroupID, exchangeRate.Rate, exchangeRate.Date).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
-	var p = Persistence{}
-	p.db = db
-	err = p.InsertExchangeRate(exchangeRate)
-
-	if err != nil {
-		t.Errorf("error was not expected while inserting default exchange rate: %s", err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-}
-
-func TestGetDefaultExchangeRates(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-	}
-
-	currency := Currency{ID: 1, Code: "USD", Symbol: "$", Name: "US Dollar"}
-	exchangeRate := ExchangeRate{CurrencyID: currency.ID, Rate: 1.0, Date: time.Now(), GroupID: 1}
-	mock.ExpectQuery("SELECT currency_id, rate, date, group_id FROM default_exchange_rates").
-		WithArgs(currency.ID, exchangeRate.GroupID, exchangeRate.Date, exchangeRate.Date).
-		WillReturnRows(sqlmock.NewRows([]string{"currency_id", "rate", "date", "group_id"}).
-			AddRow(exchangeRate.CurrencyID, exchangeRate.Rate, exchangeRate.Date, exchangeRate.GroupID))
-
-	var p = Persistence{}
-	p.db = db
-	r, err := p.GetExchangeRates(currency, exchangeRate.GroupID, exchangeRate.Date, exchangeRate.Date)
-
-	if err != nil {
-		t.Errorf("error was not expected while getting default exchange rates: %s", err)
-	}
-
-	if err := mock.ExpectationsWereMet(); err != nil {
-		t.Errorf("there were unfulfilled expectations: %s", err)
-	}
-
-	for _, e := range r {
-		if e.CurrencyID != exchangeRate.CurrencyID {
-			t.Errorf("expected currency ID %d, but got %d", exchangeRate.CurrencyID, e.CurrencyID)
-		}
-		if e.Rate != exchangeRate.Rate {
-			t.Errorf("expected rate %f, but got %f", exchangeRate.Rate, e.Rate)
-		}
-		if e.Date != exchangeRate.Date {
-			t.Errorf("expected date %s, but got %s", exchangeRate.Date, e.Date)
-		}
 	}
 }
