@@ -66,7 +66,8 @@
                 "bierner.github-markdown-preview",
                 "ckolkman.vscode-postgres",
                 "ms-azuretools.vscode-docker",
-                "ms-vscode.makefile-tools"
+                "ms-vscode.makefile-tools",
+                "github.vscode-github-actions"
             ]
         }
     },
