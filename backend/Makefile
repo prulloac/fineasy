@@ -93,3 +93,18 @@ production/deploy: confirm tidy audit no-dirty
 	GOOS=linux GOARCH=amd64 go build -ldflags='-s' -o=${OUTPUT_DIR}/linux_amd64/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
 	upx -5 ${OUTPUT_DIR}/linux_amd64/${BINARY_NAME}
 	# Include additional deployment steps here...
+
+## clean: removes all build binaries
+.PHONY: clean
+clean:
+	rm -rf ${OUTPUT_DIR}
+
+## schema/up: apply database schema migrations
+.PHONY: schema/up
+schema/up:
+	go run cmd/db/main.go up
+
+## schema/down: rollback database schema migrations
+.PHONY: schema/down
+schema/down:
+	go run cmd/db/main.go down

@@ -3,14 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/prulloac/fineasy/api"
-	"github.com/prulloac/fineasy/persistence"
+	"github.com/prulloac/fineasy/internal/api"
 )
 
 func main() {
-	p := persistence.Connect()
-	defer p.Close()
-	p.VerifySchema()
 	fmt.Println("Server is running...")
 	api.Run()
 }
