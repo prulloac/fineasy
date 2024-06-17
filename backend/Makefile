@@ -2,6 +2,8 @@
 MAIN_PACKAGE_PATH := ./cmd/app
 BINARY_NAME := app
 OUTPUT_DIR := ./bin
+DOCKER_TAG := prulloac/fineasy:latest
+DOCKER_ARGS := --no-cache
 
 # ==================================================================================== #
 # HELPERS
@@ -62,6 +64,11 @@ test/cover:
 build:
 	# Include additional build steps, like TypeScript, SCSS or Tailwind compilation here...
 	go build -o=${OUTPUT_DIR}/${BINARY_NAME} ${MAIN_PACKAGE_PATH}
+
+## build/docker: build the application as a Docker image
+.PHONY: build/docker
+build/docker:
+	docker build -t ${DOCKER_TAG} -f deployment/Dockerfile ${DOCKER_ARGS} .
 
 ## run: run the  application
 .PHONY: run
