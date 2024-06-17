@@ -16,8 +16,13 @@ func NewCurrencyRepository(db *sql.DB) *CurrencyRepository {
 	return &CurrencyRepository{db}
 }
 
-func (c *CurrencyRepository) CreateCurrenciesTable() {
-	data, _ := os.ReadFile("persistence/schema/currencies.sql")
+func (c *CurrencyRepository) CreateTable() {
+	data, _ := os.ReadFile("internal/persistence/schema/currencies.sql")
+
+	if data == nil {
+		panic("Error reading accounts schema file!")
+	}
+
 	_, err := c.db.Exec(string(data))
 	if err != nil {
 		fmt.Println("Error creating currencies table!")
@@ -26,7 +31,7 @@ func (c *CurrencyRepository) CreateCurrenciesTable() {
 	fmt.Println("Currencies table created!")
 }
 
-func (c *CurrencyRepository) DropCurrenciesTable() {
+func (c *CurrencyRepository) DropTable() {
 	_, err := c.db.Exec("DROP TABLE IF EXISTS currencies")
 	if err != nil {
 		fmt.Println("Error dropping currencies table!")
@@ -35,7 +40,7 @@ func (c *CurrencyRepository) DropCurrenciesTable() {
 	fmt.Println("Currencies table dropped!")
 }
 
-func (c *CurrencyRepository) InsertCurrency(currency entity.Currency) error {
+func (c *CurrencyRepository) Insert(currency entity.Currency) error {
 	// check if the currency already exists in the database
 	var id int
 	err := c.db.QueryRow(`
@@ -59,7 +64,7 @@ func (c *CurrencyRepository) InsertCurrency(currency entity.Currency) error {
 	return nil
 }
 
-func (c *CurrencyRepository) GetCurrencies() ([]entity.Currency, error) {
+func (c *CurrencyRepository) GetAll() ([]entity.Currency, error) {
 	rows, err := c.db.Query(`
 	SELECT 
 		id, 
@@ -85,7 +90,7 @@ func (c *CurrencyRepository) GetCurrencies() ([]entity.Currency, error) {
 	return currencies, nil
 }
 
-func (c *CurrencyRepository) GetCurrency(id int) (entity.Currency, error) {
+func (c *CurrencyRepository) GetByID(id int) (entity.Currency, error) {
 	var currency entity.Currency
 	err := c.db.QueryRow(`
 	SELECT 
@@ -102,7 +107,7 @@ func (c *CurrencyRepository) GetCurrency(id int) (entity.Currency, error) {
 	return currency, nil
 }
 
-func (c *CurrencyRepository) UpdateCurrency(currency entity.Currency) error {
+func (c *CurrencyRepository) Update(currency entity.Currency) error {
 	_, err := c.db.Exec(`
 	UPDATE currencies 
 	SET 

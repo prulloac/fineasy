@@ -19,6 +19,7 @@ type Persistence struct {
 	currencyRepository     *r.CurrencyRepository
 	exchangeRateRepository *r.ExchangeRateRepository
 	groupRepository        *r.GroupRepository
+	accountsRepository     *r.AccountsRepository
 }
 
 func (p *Persistence) GetUserRepository() *r.UserRepository {
@@ -39,6 +40,10 @@ func (p *Persistence) GetExchangeRateRepository() *r.ExchangeRateRepository {
 
 func (p *Persistence) GetGroupRepository() *r.GroupRepository {
 	return p.groupRepository
+}
+
+func (p *Persistence) GetAccountsRepository() *r.AccountsRepository {
+	return p.accountsRepository
 }
 
 func Connect() *Persistence {
@@ -67,6 +72,7 @@ func Connect() *Persistence {
 	instance.currencyRepository = r.NewCurrencyRepository(db)
 	instance.exchangeRateRepository = r.NewExchangeRateRepository(db)
 	instance.groupRepository = r.NewGroupRepository(db)
+	instance.accountsRepository = r.NewAccountsRepository(db)
 	return instance
 }
 
@@ -77,20 +83,22 @@ func (p *Persistence) Close() {
 
 func (p *Persistence) VerifySchema() {
 	fmt.Println("Verifying schema...")
-	p.GetUserRepository().CreateUsersTable()
-	p.GetCurrencyRepository().CreateCurrenciesTable()
-	p.GetGroupRepository().CreateGroupsTable()
-	p.GetExchangeRateRepository().CreateExchangeRatesTable()
-	p.GetCategoriesRepository().CreateCategoriesTable()
+	p.GetUserRepository().CreateTable()
+	p.GetCurrencyRepository().CreateTable()
+	p.GetGroupRepository().CreateTable()
+	p.GetExchangeRateRepository().CreateTable()
+	p.GetCategoriesRepository().CreateTable()
+	p.GetAccountsRepository().CreateTable()
 	fmt.Println("Schema verified!")
 }
 
 func (p *Persistence) DropSchema() {
 	fmt.Println("Dropping schema...")
-	p.GetCategoriesRepository().DropCategoriesTable()
-	p.GetExchangeRateRepository().DropExchangeRatesTable()
-	p.GetGroupRepository().DropGroupsTable()
-	p.GetCurrencyRepository().DropCurrenciesTable()
-	p.GetUserRepository().DropUsersTable()
+	p.GetAccountsRepository().DropTable()
+	p.GetCategoriesRepository().DropTable()
+	p.GetExchangeRateRepository().DropTable()
+	p.GetGroupRepository().DropTable()
+	p.GetCurrencyRepository().DropTable()
+	p.GetUserRepository().DropTable()
 	fmt.Println("Schema dropped!")
 }

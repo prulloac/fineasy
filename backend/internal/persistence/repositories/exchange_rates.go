@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/prulloac/fineasy/internal/persistence/entity"
+	"github.com/prulloac/fineasy/pkg"
 )
 
 type ExchangeRateRepository struct {
@@ -17,8 +18,13 @@ func NewExchangeRateRepository(db *sql.DB) *ExchangeRateRepository {
 	return &ExchangeRateRepository{db}
 }
 
-func (e *ExchangeRateRepository) CreateExchangeRatesTable() {
-	data, _ := os.ReadFile("persistence/schema/exchange_rates.sql")
+func (e *ExchangeRateRepository) CreateTable() {
+	data, _ := os.ReadFile("internal/persistence/schema/exchange_rates.sql")
+
+	if data == nil {
+		panic("Error reading accounts schema file!")
+	}
+
 	_, err := e.db.Exec(string(data))
 	if err != nil {
 		fmt.Println("Error creating exchange rates table!")
@@ -27,7 +33,7 @@ func (e *ExchangeRateRepository) CreateExchangeRatesTable() {
 	fmt.Println("Exchange rates table created!")
 }
 
-func (e *ExchangeRateRepository) DropExchangeRatesTable() {
+func (e *ExchangeRateRepository) DropTable() {
 	_, err := e.db.Exec("DROP TABLE IF EXISTS exchange_rates")
 	if err != nil {
 		fmt.Println("Error dropping exchange rates table!")
@@ -36,7 +42,7 @@ func (e *ExchangeRateRepository) DropExchangeRatesTable() {
 	fmt.Println("Exchange rates table dropped!")
 }
 
-func (e *ExchangeRateRepository) InsertExchangeRate(exchangeRate entity.ExchangeRate) error {
+func (e *ExchangeRateRepository) Insert(exchangeRate entity.ExchangeRate) error {
 	// check if the exchange rate already exists
 	var id int
 	err := e.db.QueryRow(`
@@ -71,7 +77,7 @@ func (e *ExchangeRateRepository) InsertExchangeRate(exchangeRate entity.Exchange
 	return nil
 }
 
-func (e *ExchangeRateRepository) GetExchangeRates(currency entity.Currency, groupID int, since time.Time, until time.Time) ([]entity.ExchangeRate, error) {
+func (e *ExchangeRateRepository) GetByCurrencyAndGroupAndTimeFrame(currencyID int, groupID int, timeFrame pkg.Timeframe) ([]entity.ExchangeRate, error) {
 	rows, err := e.db.Query(`
 	SELECT 
 		id,
@@ -86,10 +92,10 @@ func (e *ExchangeRateRepository) GetExchangeRates(currency entity.Currency, grou
 	AND date >= $3 
 	AND date <= $4
 	`,
-		currency.ID,
+		currencyID,
 		groupID,
-		since,
-		until)
+		timeFrame.Since,
+		timeFrame.Until)
 	if err != nil {
 		return nil, err
 	}
@@ -112,7 +118,7 @@ func (e *ExchangeRateRepository) GetExchangeRates(currency entity.Currency, grou
 	return exchangeRates, nil
 }
 
-func (e *ExchangeRateRepository) GetExchangeRate(currency entity.Currency, groupID int, date time.Time) (entity.ExchangeRate, error) {
+func (e *ExchangeRateRepository) GetByCurrencyAndGroupAndDate(currencyID int, groupID int, date time.Time) (entity.ExchangeRate, error) {
 	var exchangeRate entity.ExchangeRate
 	err := e.db.QueryRow(`
 	SELECT 
@@ -126,7 +132,7 @@ func (e *ExchangeRateRepository) GetExchangeRate(currency entity.Currency, group
 	AND group_id = $2
 	AND date = $3
 	`,
-		currency.ID,
+		currencyID,
 		groupID,
 		date).
 		Scan(
@@ -140,7 +146,7 @@ func (e *ExchangeRateRepository) GetExchangeRate(currency entity.Currency, group
 	return exchangeRate, nil
 }
 
-func (e *ExchangeRateRepository) UpdateExchangeRate(exchangeRate entity.ExchangeRate) error {
+func (e *ExchangeRateRepository) Update(exchangeRate entity.ExchangeRate) error {
 	_, err := e.db.Exec(`
 	UPDATE exchange_rates 
 	SET rate = $1 

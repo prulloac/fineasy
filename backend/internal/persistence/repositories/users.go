@@ -16,8 +16,13 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 	return &UserRepository{db}
 }
 
-func (u *UserRepository) CreateUsersTable() {
-	data, _ := os.ReadFile("persistence/schema/users.sql")
+func (u *UserRepository) CreateTable() {
+	data, _ := os.ReadFile("internal/persistence/schema/users.sql")
+
+	if data == nil {
+		panic("Error reading accounts schema file!")
+	}
+
 	_, err := u.db.Exec(string(data))
 	if err != nil {
 		fmt.Println("Error creating users table!")
@@ -26,7 +31,7 @@ func (u *UserRepository) CreateUsersTable() {
 	fmt.Println("Users table created!")
 }
 
-func (u *UserRepository) DropUsersTable() {
+func (u *UserRepository) DropTable() {
 	_, err := u.db.Exec("DROP TABLE IF EXISTS users")
 	if err != nil {
 		fmt.Println("Error dropping users table!")
@@ -35,7 +40,7 @@ func (u *UserRepository) DropUsersTable() {
 	fmt.Println("Users table dropped!")
 }
 
-func (u *UserRepository) InsertUser(user entity.User) error {
+func (u *UserRepository) Insert(user entity.User) error {
 	// check if the user already exists
 	var id int
 	err := u.db.QueryRow(`
@@ -60,7 +65,7 @@ func (u *UserRepository) InsertUser(user entity.User) error {
 	return nil
 }
 
-func (u *UserRepository) GetUsers() ([]entity.User, error) {
+func (u *UserRepository) GetAll() ([]entity.User, error) {
 	rows, err := u.db.Query(`
 	SELECT
 		id,
@@ -91,7 +96,7 @@ func (u *UserRepository) GetUsers() ([]entity.User, error) {
 	return users, nil
 }
 
-func (u *UserRepository) GetUser(id int) (entity.User, error) {
+func (u *UserRepository) GetByID(id int) (entity.User, error) {
 	var user entity.User
 	err := u.db.QueryRow(`
 	SELECT
@@ -113,7 +118,7 @@ func (u *UserRepository) GetUser(id int) (entity.User, error) {
 	return user, nil
 }
 
-func (u *UserRepository) UpdateUser(user entity.User) error {
+func (u *UserRepository) Update(user entity.User) error {
 	_, err := u.db.Exec(`
 	UPDATE users
 	SET username = $1, email = $2, updated_at = CURRENT_TIMESTAMP
@@ -127,7 +132,7 @@ func (u *UserRepository) UpdateUser(user entity.User) error {
 	return nil
 }
 
-func (u *UserRepository) GetUserByEmail(email string) (entity.User, error) {
+func (u *UserRepository) GetByEmail(email string) (entity.User, error) {
 	var user entity.User
 	err := u.db.QueryRow(`
 	SELECT

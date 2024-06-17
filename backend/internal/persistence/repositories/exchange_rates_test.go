@@ -7,6 +7,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/prulloac/fineasy/internal/persistence/entity"
+	"github.com/prulloac/fineasy/pkg"
 )
 
 func TestInsertExchangeRate(t *testing.T) {
@@ -24,7 +25,7 @@ func TestInsertExchangeRate(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = ExchangeRateRepository{db}
-	err = p.InsertExchangeRate(exchangeRate)
+	err = p.Insert(exchangeRate)
 
 	if err != nil {
 		t.Errorf("error was not expected while inserting default exchange rate: %s", err)
@@ -41,15 +42,14 @@ func TestGetExchangeRates(t *testing.T) {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 
-	currency := entity.Currency{ID: 1, Code: "USD", Symbol: "$", Name: "US Dollar"}
-	exchangeRate := entity.ExchangeRate{ID: 1, CurrencyID: currency.ID, Rate: 1.0, Date: time.Now(), GroupID: 1}
+	exchangeRate := entity.ExchangeRate{ID: 1, CurrencyID: 1, Rate: 1.0, Date: time.Now(), GroupID: 1}
 	mock.ExpectQuery("SELECT id, currency_id, rate, date, group_id FROM default_exchange_rates").
-		WithArgs(currency.ID, exchangeRate.GroupID, exchangeRate.Date, exchangeRate.Date).
+		WithArgs(1, exchangeRate.GroupID, exchangeRate.Date, exchangeRate.Date).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "currency_id", "rate", "date", "group_id"}).
 			AddRow(exchangeRate.ID, exchangeRate.CurrencyID, exchangeRate.Rate, exchangeRate.Date, exchangeRate.GroupID))
 
 	var p = ExchangeRateRepository{db}
-	r, err := p.GetExchangeRates(currency, exchangeRate.GroupID, exchangeRate.Date, exchangeRate.Date)
+	r, err := p.GetByCurrencyAndGroupAndTimeFrame(1, exchangeRate.GroupID, pkg.Timeframe{Since: exchangeRate.Date, Until: exchangeRate.Date})
 
 	if err != nil {
 		t.Errorf("error was not expected while getting default exchange rates: %s", err)
@@ -78,15 +78,14 @@ func TestGetExchangeRate(t *testing.T) {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
 
-	currency := entity.Currency{ID: 1, Code: "USD", Symbol: "$", Name: "US Dollar"}
-	exchangeRate := entity.ExchangeRate{CurrencyID: currency.ID, Rate: 1.0, Date: time.Now(), GroupID: 1}
+	exchangeRate := entity.ExchangeRate{CurrencyID: 1, Rate: 1.0, Date: time.Now(), GroupID: 1}
 	mock.ExpectQuery("SELECT currency_id, group_id, rate, date FROM exchange_rates").
-		WithArgs(currency.ID, exchangeRate.GroupID, exchangeRate.Date).
+		WithArgs(1, exchangeRate.GroupID, exchangeRate.Date).
 		WillReturnRows(sqlmock.NewRows([]string{"currency_id", "group_id", "rate", "date"}).
 			AddRow(exchangeRate.CurrencyID, exchangeRate.GroupID, exchangeRate.Rate, exchangeRate.Date))
 
 	var p = ExchangeRateRepository{db}
-	r, err := p.GetExchangeRate(currency, exchangeRate.GroupID, exchangeRate.Date)
+	r, err := p.GetByCurrencyAndGroupAndDate(1, exchangeRate.GroupID, exchangeRate.Date)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting default exchange rate: %s", err)
@@ -122,7 +121,7 @@ func TestUpdateExchangeRate(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = ExchangeRateRepository{db}
-	err = p.UpdateExchangeRate(exchangeRate)
+	err = p.Update(exchangeRate)
 
 	if err != nil {
 		t.Errorf("error was not expected while updating default exchange rate: %s", err)

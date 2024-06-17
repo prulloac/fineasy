@@ -24,7 +24,7 @@ func TestInsertUser(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = UserRepository{db}
-	err = p.InsertUser(user)
+	err = p.Insert(user)
 
 	if err != nil {
 		t.Errorf("error was not expected while inserting user: %s", err)
@@ -47,7 +47,7 @@ func TestGetUsers(t *testing.T) {
 			AddRow(1, user.Username, user.Email, user.CreatedAt, user.UpdateAt))
 
 	var p = UserRepository{db}
-	r, err := p.GetUsers()
+	r, err := p.GetAll()
 
 	if err != nil {
 		t.Errorf("error was not expected while getting users: %s", err)
@@ -72,12 +72,12 @@ func TestGetUser(t *testing.T) {
 
 	user := entity.User{ID: 1, Username: "user", Email: "mail", CreatedAt: time.Now(), UpdateAt: time.Now()}
 	mock.ExpectQuery("SELECT id, username, email, created_at, updated_at FROM users").
-		WithArgs(user.ID).
+		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "username", "email", "created_at", "updated_at"}).
 			AddRow(1, user.Username, user.Email, user.CreatedAt, user.UpdateAt))
 
 	var p = UserRepository{db}
-	r, err := p.GetUser(user.ID)
+	r, err := p.GetByID(1)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting user: %s", err)
@@ -104,7 +104,7 @@ func TestUpdateUser(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = UserRepository{db}
-	err = p.UpdateUser(user)
+	err = p.Update(user)
 
 	if err != nil {
 		t.Errorf("error was not expected while updating user: %s", err)
@@ -128,7 +128,7 @@ func TestGetUserByEmail(t *testing.T) {
 			AddRow(1, user.Username, user.Email, user.CreatedAt, user.UpdateAt))
 
 	var p = UserRepository{db}
-	r, err := p.GetUserByEmail(user.Email)
+	r, err := p.GetByEmail(user.Email)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting user by email: %s", err)

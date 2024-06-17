@@ -24,7 +24,7 @@ func TestInsertCategory(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = CategoriesRepository{db}
-	err = p.InsertCategory(category)
+	err = p.Insert(category)
 
 	if err != nil {
 		t.Errorf("error was not expected while inserting category: %s", err)
@@ -48,7 +48,7 @@ func TestGetCategories(t *testing.T) {
 			AddRow(1, category.Name, category.Icon, category.Color, category.Description, category.Order, category.GroupID))
 
 	var p = CategoriesRepository{db}
-	r, err := p.GetCategories(category.GroupID)
+	r, err := p.GetByGroupID(category.GroupID)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting categories: %s", err)
@@ -79,7 +79,7 @@ func TestGetCategory(t *testing.T) {
 		)
 
 	var p = CategoriesRepository{db}
-	r, err := p.GetCategory(1)
+	r, err := p.GetByID(1)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting category: %s", err)
@@ -106,7 +106,7 @@ func TestUpdateCategory(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = CategoriesRepository{db}
-	err = p.UpdateCategory(category)
+	err = p.Update(category)
 
 	if err != nil {
 		t.Errorf("error was not expected while updating category: %s", err)

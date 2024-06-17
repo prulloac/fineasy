@@ -16,8 +16,13 @@ func NewGroupRepository(db *sql.DB) *GroupRepository {
 	return &GroupRepository{db}
 }
 
-func (g *GroupRepository) CreateGroupsTable() {
-	data, _ := os.ReadFile("persistence/schema/groups.sql")
+func (g *GroupRepository) CreateTable() {
+	data, _ := os.ReadFile("internal/persistence/schema/groups.sql")
+
+	if data == nil {
+		panic("Error reading accounts schema file!")
+	}
+
 	_, err := g.db.Exec(string(data))
 	if err != nil {
 		fmt.Println("Error creating groups table!")
@@ -26,7 +31,7 @@ func (g *GroupRepository) CreateGroupsTable() {
 	fmt.Println("Categories table created!")
 }
 
-func (g *GroupRepository) DropGroupsTable() {
+func (g *GroupRepository) DropTable() {
 	_, err := g.db.Exec("DROP TABLE IF EXISTS groups")
 	if err != nil {
 		fmt.Println("Error dropping groups table!")
@@ -35,7 +40,7 @@ func (g *GroupRepository) DropGroupsTable() {
 	fmt.Println("Groups table dropped!")
 }
 
-func (g *GroupRepository) InsertGroup(group entity.Group) error {
+func (g *GroupRepository) Insert(group entity.Group) error {
 	// check if the group already exists
 	var id int
 	err := g.db.QueryRow(`
@@ -58,7 +63,7 @@ func (g *GroupRepository) InsertGroup(group entity.Group) error {
 	return nil
 }
 
-func (g *GroupRepository) GetGroups(userID int) ([]entity.Group, error) {
+func (g *GroupRepository) GetByUserID(userID int) ([]entity.Group, error) {
 	rows, err := g.db.Query(`
 	SELECT 
 		id,
@@ -85,7 +90,7 @@ func (g *GroupRepository) GetGroups(userID int) ([]entity.Group, error) {
 	return groups, nil
 }
 
-func (g *GroupRepository) GetGroup(id int) (entity.Group, error) {
+func (g *GroupRepository) GetByID(id int) (entity.Group, error) {
 	var group entity.Group
 	err := g.db.QueryRow(`
 	SELECT 
@@ -102,7 +107,7 @@ func (g *GroupRepository) GetGroup(id int) (entity.Group, error) {
 	return group, nil
 }
 
-func (g *GroupRepository) UpdateGroup(group entity.Group) error {
+func (g *GroupRepository) Update(group entity.Group) error {
 	_, err := g.db.Exec(`
 	UPDATE groups
 	SET name = $1

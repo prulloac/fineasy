@@ -23,7 +23,7 @@ func TestInsertCurrency(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = CurrencyRepository{db}
-	err = p.InsertCurrency(currency)
+	err = p.Insert(currency)
 
 	if err != nil {
 		t.Errorf("error was not expected while inserting currency: %s", err)
@@ -46,7 +46,7 @@ func TestGetCurrencies(t *testing.T) {
 			AddRow(1, currency.Code, currency.Symbol, currency.Name))
 
 	var p = CurrencyRepository{db}
-	r, err := p.GetCurrencies()
+	r, err := p.GetAll()
 
 	if err != nil {
 		t.Errorf("error was not expected while getting currencies: %s", err)
@@ -82,7 +82,7 @@ func TestGetCurrency(t *testing.T) {
 			AddRow(currency.ID, currency.Code, currency.Symbol, currency.Name))
 
 	var p = CurrencyRepository{db}
-	r, err := p.GetCurrency(currency.ID)
+	r, err := p.GetByID(currency.ID)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting currency: %s", err)
@@ -118,7 +118,7 @@ func TestUpdateCurrency(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = CurrencyRepository{db}
-	err = p.UpdateCurrency(currency)
+	err = p.Update(currency)
 
 	if err != nil {
 		t.Errorf("error was not expected while updating currency: %s", err)

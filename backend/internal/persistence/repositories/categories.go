@@ -16,8 +16,13 @@ func NewCategoriesRepository(db *sql.DB) *CategoriesRepository {
 	return &CategoriesRepository{db}
 }
 
-func (c *CategoriesRepository) CreateCategoriesTable() {
-	data, _ := os.ReadFile("persistence/schema/categories.sql")
+func (c *CategoriesRepository) CreateTable() {
+	data, _ := os.ReadFile("internal/persistence/schema/categories.sql")
+
+	if data == nil {
+		panic("Error reading accounts schema file!")
+	}
+
 	_, err := c.db.Exec(string(data))
 	if err != nil {
 		fmt.Println("Error creating categories table!")
@@ -26,7 +31,7 @@ func (c *CategoriesRepository) CreateCategoriesTable() {
 	fmt.Println("Categories table created!")
 }
 
-func (c *CategoriesRepository) DropCategoriesTable() {
+func (c *CategoriesRepository) DropTable() {
 	_, err := c.db.Exec("DROP TABLE IF EXISTS categories")
 	if err != nil {
 		fmt.Println("Error dropping categories table!")
@@ -35,7 +40,7 @@ func (c *CategoriesRepository) DropCategoriesTable() {
 	fmt.Println("Categories table dropped!")
 }
 
-func (c *CategoriesRepository) InsertCategory(category entity.Category) error {
+func (c *CategoriesRepository) Insert(category entity.Category) error {
 	// check if the category already exists regardless of the icon, color, and description
 	var id int
 	err := c.db.QueryRow(`
@@ -59,7 +64,41 @@ func (c *CategoriesRepository) InsertCategory(category entity.Category) error {
 	return nil
 }
 
-func (c *CategoriesRepository) GetCategories(groupID int) ([]entity.Category, error) {
+func (c *CategoriesRepository) GetAll() ([]entity.Category, error) {
+	rows, err := c.db.Query(`
+	SELECT 
+		id, 
+		name, 
+		icon, 
+		color, 
+		description, 
+		ord, 
+		group_id 
+	FROM categories`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var categories []entity.Category
+	for rows.Next() {
+		var category entity.Category
+		err := rows.Scan(&category.ID,
+			&category.Name,
+			&category.Icon,
+			&category.Color,
+			&category.Description,
+			&category.Order,
+			&category.GroupID)
+		if err != nil {
+			return nil, err
+		}
+		categories = append(categories, category)
+	}
+	return categories, nil
+}
+
+func (c *CategoriesRepository) GetByGroupID(groupID int) ([]entity.Category, error) {
 	rows, err := c.db.Query(`
 	SELECT 
 		id, 
@@ -73,6 +112,7 @@ func (c *CategoriesRepository) GetCategories(groupID int) ([]entity.Category, er
 	WHERE group_id = $1
 	ORDER BY ord ASC
 	`, groupID)
+
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +132,7 @@ func (c *CategoriesRepository) GetCategories(groupID int) ([]entity.Category, er
 	return categories, nil
 }
 
-func (c *CategoriesRepository) GetCategory(id int) (entity.Category, error) {
+func (c *CategoriesRepository) GetByID(id int) (entity.Category, error) {
 	var category entity.Category
 	err := c.db.QueryRow(`
 	SELECT 
@@ -113,7 +153,7 @@ func (c *CategoriesRepository) GetCategory(id int) (entity.Category, error) {
 	return category, nil
 }
 
-func (c *CategoriesRepository) UpdateCategory(category entity.Category) error {
+func (c *CategoriesRepository) Update(category entity.Category) error {
 	_, err := c.db.Exec(`
 	UPDATE categories 
 	SET 

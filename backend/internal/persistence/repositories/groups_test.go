@@ -24,7 +24,7 @@ func TestInsertGroup(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = GroupRepository{db}
-	err = p.InsertGroup(group)
+	err = p.Insert(group)
 
 	if err != nil {
 		t.Errorf("error was not expected while inserting group: %s", err)
@@ -48,7 +48,7 @@ func TestGetGroups(t *testing.T) {
 			AddRow(1, group.Name, group.CreatedBy, group.CreatedAt))
 
 	var p = GroupRepository{db}
-	r, err := p.GetGroups(group.CreatedBy)
+	r, err := p.GetByUserID(1)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting groups: %s", err)
@@ -73,12 +73,12 @@ func TestGetGroup(t *testing.T) {
 
 	group := entity.Group{Name: "Family", CreatedBy: 1, CreatedAt: time.Now()}
 	mock.ExpectQuery("SELECT id, name, created_by, created_at FROM groups").
-		WithArgs(group.ID).
+		WithArgs(1).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "name", "created_by", "created_at"}).
 			AddRow(1, group.Name, group.CreatedBy, group.CreatedAt))
 
 	var p = GroupRepository{db}
-	r, err := p.GetGroup(group.ID)
+	r, err := p.GetByID(1)
 
 	if err != nil {
 		t.Errorf("error was not expected while getting group: %s", err)
@@ -105,7 +105,7 @@ func TestUpdateGroup(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	var p = GroupRepository{db}
-	err = p.UpdateGroup(group)
+	err = p.Update(group)
 
 	if err != nil {
 		t.Errorf("error was not expected while updating group: %s", err)
