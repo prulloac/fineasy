@@ -87,11 +87,8 @@ erDiagram
         receipt_url varchar
         registered_at datetime
         registered_by int
-    }
-
-    TRANSACTION_TYPES {
-        id int
-        name varchar
+        created_at datetime
+        updated_at datetime
     }
 
     USERS ||--|{ USER_GROUPS : contains
@@ -103,7 +100,6 @@ erDiagram
     CATEGORIES ||--|{ TRANSACTIONS : contains
     CURRENCIES ||--|{ TRANSACTIONS : contains
     CURRENCIES ||--|{ EXCHANGE_RATES : contains
-    TRANSACTION_TYPES ||--|{ TRANSACTIONS : contains
     ACCOUNTS ||--|{ TRANSACTIONS : contains
     USERS ||--|{ TRANSACTIONS : contains
 

@@ -20,6 +20,9 @@ type Persistence struct {
 	exchangeRateRepository *r.ExchangeRateRepository
 	groupRepository        *r.GroupRepository
 	accountsRepository     *r.AccountsRepository
+	budgetsRepository      *r.BudgetsRepository
+	userGroupsRepository   *r.UserGroupsRepository
+	transactionsRepository *r.TransactionsRepository
 }
 
 func (p *Persistence) GetUserRepository() *r.UserRepository {
@@ -44,6 +47,18 @@ func (p *Persistence) GetGroupRepository() *r.GroupRepository {
 
 func (p *Persistence) GetAccountsRepository() *r.AccountsRepository {
 	return p.accountsRepository
+}
+
+func (p *Persistence) GetBudgetsRepository() *r.BudgetsRepository {
+	return p.budgetsRepository
+}
+
+func (p *Persistence) GetUserGroupsRepository() *r.UserGroupsRepository {
+	return p.userGroupsRepository
+}
+
+func (p *Persistence) GetTransactionsRepository() *r.TransactionsRepository {
+	return p.transactionsRepository
 }
 
 func Connect() *Persistence {
@@ -73,6 +88,9 @@ func Connect() *Persistence {
 	instance.exchangeRateRepository = r.NewExchangeRateRepository(db)
 	instance.groupRepository = r.NewGroupRepository(db)
 	instance.accountsRepository = r.NewAccountsRepository(db)
+	instance.budgetsRepository = r.NewBudgetsRepository(db)
+	instance.userGroupsRepository = r.NewUserGroupsRepository(db)
+	instance.transactionsRepository = r.NewTransactionsRepository(db)
 	return instance
 }
 
@@ -86,17 +104,23 @@ func (p *Persistence) VerifySchema() {
 	p.GetUserRepository().CreateTable()
 	p.GetCurrencyRepository().CreateTable()
 	p.GetGroupRepository().CreateTable()
+	p.GetUserGroupsRepository().CreateTable()
 	p.GetExchangeRateRepository().CreateTable()
 	p.GetCategoriesRepository().CreateTable()
 	p.GetAccountsRepository().CreateTable()
+	p.GetBudgetsRepository().CreateTable()
+	p.GetTransactionsRepository().CreateTable()
 	fmt.Println("Schema verified!")
 }
 
 func (p *Persistence) DropSchema() {
 	fmt.Println("Dropping schema...")
+	p.GetTransactionsRepository().DropTable()
+	p.GetBudgetsRepository().DropTable()
 	p.GetAccountsRepository().DropTable()
 	p.GetCategoriesRepository().DropTable()
 	p.GetExchangeRateRepository().DropTable()
+	p.GetUserGroupsRepository().DropTable()
 	p.GetGroupRepository().DropTable()
 	p.GetCurrencyRepository().DropTable()
 	p.GetUserRepository().DropTable()
