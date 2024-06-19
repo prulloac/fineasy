@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Creating PWA with React (using CRA)
 
-## Getting Started
+### Project Setup:
+- Clone the repo: https://github.com/Rutvi25/PWA-Demo/tree/pwa-cra-demo
+- run `npm i` or `npm install` for installing dependencies.
+- run `npm start` to start the development server on port 3000.
+  
+## Available Scripts
 
-First, run the development server:
+### `npm start`
+Runs the app in the development mode.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### `npm test`
+Launches the test runner in the interactive watch mode.\
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### `npm run build`
+Builds the app for production to the `build` folder.\
+It correctly bundles React in production mode and optimizes the build for the best performance.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### `npm run eject`
+This command will remove the single-build dependency from your project.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Output
+![This icon will install the web application on device](https://github.com/Rutvi25/PWA-Demo/assets/97082690/03a2943a-cee1-4651-a11b-47b2b8dc1357)
 
-## Learn More
+https://github.com/Rutvi25/PWA-Demo/assets/97082690/75ef19f0-9864-47a3-8e08-2071ddc460b1
 
-To learn more about Next.js, take a look at the following resources:
+https://github.com/Rutvi25/PWA-Demo/assets/97082690/7730fe3e-d2db-4f71-ac41-baa5ef5ca6b9
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+![Screenshot from 2023-11-06 15-05-02](https://github.com/Rutvi25/PWA-Demo/assets/97082690/44d5efd4-b3f8-4c65-956a-80fbb2c04eb9)
