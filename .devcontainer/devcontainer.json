@@ -1,0 +1,86 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/javascript-node-postgres
+{
+    "name": "fineasy",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app",
+    // Features to add to the dev container. More info: https://containers.dev/features.
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": true,
+            "configureZshAsDefaultShell": true,
+            "installOhMyZsh": true,
+            "installOhMyZshConfig": true,
+            "upgradePackages": true,
+            "username": "automatic",
+            "userUid": "automatic",
+            "userGid": "automatic"
+        },
+        "ghcr.io/devcontainers/features/git:1": {
+            "ppa": true,
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/github-cli:1": {
+            "installDirectlyFromGitHubRelease": true,
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/go:1": {
+            "version": "latest"
+        },
+        "ghcr.io/prulloac/devcontainer-features/bun:1": {},
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "installDockerBuildx": true,
+            "version": "latest",
+            "dockerDashComposeVersion": "latest"
+        }
+    },
+    // Use 'postCreateCommand' to run commands after the container is created.
+    "postCreateCommand": {
+        "git-config": "git config --global --add safe.directory /workspace/fineasy",
+        "copy-backend-env": "cp build/container.env.example .env",
+        "psql": "sh .devcontainer/psql.sh",
+    },
+    // "postAttachCommand": {
+    // },
+    // Use 'forwardPorts' to make a list of ports inside the container available locally.
+    // This can be used to network with other containers or with the host.
+    "forwardPorts": [
+        5432,
+        8080
+    ],
+    "portsAttributes": {
+        "5432": {
+            "label": "PostgreSQL"
+        },
+        "8080": {
+            "label": "API"
+        },
+        "3000": {
+            "label": "Frontend"
+        }
+    },
+    // Configure tool-specific properties.
+    "customizations": {
+        "codespaces": {
+            "openFiles": [
+                "README.md"
+            ]
+        },
+        "vscode": {
+            "extensions": [
+                "bierner.github-markdown-preview",
+                "ckolkman.vscode-postgres",
+                "ms-azuretools.vscode-docker",
+                "ms-vscode.makefile-tools",
+                "github.vscode-github-actions",
+                "codezombiech.gitignore",
+                "DavidAnson.vscode-markdownlint",
+                "mtxr.sqltools",
+                "eamodio.gitlens"
+            ]
+        }
+    },
+    // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+    // "remoteUser": "root"
+    "workspaceFolder": "/workspace/fineasy"
+}
