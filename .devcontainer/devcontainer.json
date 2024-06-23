@@ -38,7 +38,7 @@
     "postCreateCommand": {
         "git-config": "git config --global --add safe.directory /workspace/fineasy",
         "copy-backend-env": "cp build/container.env.example .env",
-        "psql": "sh .devcontainer/psql.sh",
+        "psql": "sh .devcontainer/psql.sh"
     },
     // "postAttachCommand": {
     // },
@@ -46,7 +46,8 @@
     // This can be used to network with other containers or with the host.
     "forwardPorts": [
         5432,
-        8080
+        8080,
+        3000
     ],
     "portsAttributes": {
         "5432": {
@@ -69,14 +70,9 @@
         "vscode": {
             "extensions": [
                 "bierner.github-markdown-preview",
-                "ckolkman.vscode-postgres",
                 "ms-azuretools.vscode-docker",
-                "ms-vscode.makefile-tools",
                 "github.vscode-github-actions",
-                "codezombiech.gitignore",
-                "DavidAnson.vscode-markdownlint",
-                "mtxr.sqltools",
-                "eamodio.gitlens"
+                "DavidAnson.vscode-markdownlint"
             ]
         }
     },
