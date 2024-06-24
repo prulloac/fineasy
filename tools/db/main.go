@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	p := persistence.Connect()
+	p := persistence.NewConnection()
 	flag.Parse()
 	defer p.Close()
 	if flag.Arg(0) == "down" {

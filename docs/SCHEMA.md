@@ -159,21 +159,32 @@ erDiagram
 
 erDiagram
     CURRENCIES {
-        id int
-        name varchar
-        code varchar
+        id int PK
+        name varchar UK
+        code varchar UK
         symbol varchar
     }
 
     EXCHANGE_RATES {
-        id int
-        currency_id int
-        group_id int
+        id int PK
+        currency_id int FK 
+        base_currency_id int FK
         rate float
         date date
     }
 
+    CURRENCY_CONVERSION_PROVIDERS {
+        id int PK
+        name varchar
+        type int
+        endpoint varchar UK
+        enabled boolean
+        params json
+        run_at string
+    }
+
     CURRENCIES ||--|{ EXCHANGE_RATES : contains
+    CURRENCY_CONVERSION_PROVIDERS }|--|{ CURRENCIES : ""
 
 ```
 

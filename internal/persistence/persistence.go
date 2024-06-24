@@ -9,6 +9,7 @@ import (
 	godotenv "github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
+	c "github.com/prulloac/fineasy/internal/currencies"
 	r "github.com/prulloac/fineasy/internal/persistence/repositories"
 )
 
@@ -16,8 +17,7 @@ type Persistence struct {
 	db                     *sql.DB
 	userRepository         *r.UserRepository
 	categoriesRepository   *r.CategoriesRepository
-	currencyRepository     *r.CurrencyRepository
-	exchangeRateRepository *r.ExchangeRateRepository
+	currencyRepository     *c.CurrencyRepository
 	groupRepository        *r.GroupRepository
 	accountsRepository     *r.AccountsRepository
 	budgetsRepository      *r.BudgetsRepository
@@ -33,12 +33,8 @@ func (p *Persistence) GetCategoriesRepository() *r.CategoriesRepository {
 	return p.categoriesRepository
 }
 
-func (p *Persistence) GetCurrencyRepository() *r.CurrencyRepository {
+func (p *Persistence) GetCurrencyRepository() *c.CurrencyRepository {
 	return p.currencyRepository
-}
-
-func (p *Persistence) GetExchangeRateRepository() *r.ExchangeRateRepository {
-	return p.exchangeRateRepository
 }
 
 func (p *Persistence) GetGroupRepository() *r.GroupRepository {
@@ -61,7 +57,7 @@ func (p *Persistence) GetTransactionsRepository() *r.TransactionsRepository {
 	return p.transactionsRepository
 }
 
-func Connect() *Persistence {
+func NewConnection() *Persistence {
 	err := godotenv.Load()
 
 	if err != nil {
@@ -84,8 +80,7 @@ func Connect() *Persistence {
 	instance.db = db
 	instance.userRepository = r.NewUserRepository(db)
 	instance.categoriesRepository = r.NewCategoriesRepository(db)
-	instance.currencyRepository = r.NewCurrencyRepository(db)
-	instance.exchangeRateRepository = r.NewExchangeRateRepository(db)
+	instance.currencyRepository = c.NewCurrencyRepository(db)
 	instance.groupRepository = r.NewGroupRepository(db)
 	instance.accountsRepository = r.NewAccountsRepository(db)
 	instance.budgetsRepository = r.NewBudgetsRepository(db)
@@ -101,11 +96,10 @@ func (p *Persistence) Close() {
 
 func (p *Persistence) VerifySchema() {
 	fmt.Println("Verifying schema...")
+	p.createCurrenciesTables()
 	p.GetUserRepository().CreateTable()
-	p.GetCurrencyRepository().CreateTable()
 	p.GetGroupRepository().CreateTable()
 	p.GetUserGroupsRepository().CreateTable()
-	p.GetExchangeRateRepository().CreateTable()
 	p.GetCategoriesRepository().CreateTable()
 	p.GetAccountsRepository().CreateTable()
 	p.GetBudgetsRepository().CreateTable()
@@ -119,10 +113,39 @@ func (p *Persistence) DropSchema() {
 	p.GetBudgetsRepository().DropTable()
 	p.GetAccountsRepository().DropTable()
 	p.GetCategoriesRepository().DropTable()
-	p.GetExchangeRateRepository().DropTable()
 	p.GetUserGroupsRepository().DropTable()
 	p.GetGroupRepository().DropTable()
-	p.GetCurrencyRepository().DropTable()
 	p.GetUserRepository().DropTable()
+	p.dropCurrenciesTables()
 	fmt.Println("Schema dropped!")
+}
+
+func (e *Persistence) createCurrenciesTables() {
+	data, _ := os.ReadFile("internal/currencies/schema/currencies_up.sql")
+
+	if data == nil {
+		panic("Error reading currencies schema file!")
+	}
+
+	_, err := e.db.Exec(string(data))
+	if err != nil {
+		fmt.Println("Error creating currencies schema!")
+		panic(err)
+	}
+	fmt.Println("Currencies schema up!")
+}
+
+func (e *Persistence) dropCurrenciesTables() {
+	data, _ := os.ReadFile("internal/currencies/schema/currencies_down.sql")
+
+	if data == nil {
+		panic("Error reading currencies schema file!")
+	}
+
+	_, err := e.db.Exec(string(data))
+	if err != nil {
+		fmt.Println("Error dropping currencies schema!")
+		panic(err)
+	}
+	fmt.Println("Currencies schema dropped!")
 }
