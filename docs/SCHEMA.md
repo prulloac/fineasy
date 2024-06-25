@@ -90,7 +90,7 @@ erDiagram
 
 ```
 
-## Core Entities
+## Transactions
 
 ```mermaid
 

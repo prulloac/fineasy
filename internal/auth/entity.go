@@ -12,6 +12,7 @@ type User struct {
 	Username    string    `json:"username" validate:"required,min=1"`
 	Email       string    `json:"email" validate:"required,email"`
 	ValidatedAt time.Time `json:"validated_at"`
+	Disabled    bool      `json:"disabled"`
 	CreatedAt   time.Time `json:"created_at" validate:"required,past_time"`
 	UpdatedAt   time.Time `json:"updated_at" validate:"required,past_time"`
 }
@@ -53,6 +54,7 @@ type LoginToken struct {
 	Token     string    `json:"token" validate:"required,min=1"`
 	TokenType int       `json:"token_type" validate:"required,min=1"`
 	ExpiresAt time.Time `json:"expires_at" validate:"required,past_time"`
+	UsedAt    time.Time `json:"used_at" validate:"required,past_time"`
 	CreatedAt time.Time `json:"created_at" validate:"required,past_time"`
 }
 
