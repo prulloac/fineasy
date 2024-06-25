@@ -13,13 +13,12 @@ erDiagram
         hash varchar
         username varchar
         email varchar
+        validated_at datetime
         created_at datetime
         updated_at datetime
-        last_session_id varchar
-        validated_at datetime
     }
 
-    INTERNAL_LOGIN {
+    INTERNAL_LOGINS {
         id int
         user_id int
         email varchar
@@ -28,6 +27,8 @@ erDiagram
         algorithm int
         password_last_updated_at datetime
         login_attempts int
+        last_login_attempt datetime
+        last_login_success datetime
         created_at datetime
         updated_at datetime
     }
@@ -37,33 +38,48 @@ erDiagram
         user_id int
         token varchar
         token_type int
-        created_at datetime
         expires_at datetime
+        created_at datetime
+    }
+
+    EXTERNAL_LOGIN_PROVIDERS {
+        id int
+        name varchar
+        type int
+        endpoint varchar
+        enabled boolean
+        created_at datetime
+        updated_at datetime
     }
 
     EXTERNAL_LOGINS {
         id int
         user_id int
-        provider varchar
         provider_id varchar
         created_at datetime
         updated_at datetime
     }
 
-    EXTERNAL_PROVIDERS {
+    EXTERNAL_LOGIN_TOKENS {
         id int
-        name varchar
-        endpoint varchar
+        user_id int
+        provider_id int
+        login_ip varchar
+        user_agent varchar
+        logged_in_at datetime
+        token text
         created_at datetime
-        updated_at datetime
     }
 
-    SESSIONS {
+    USER_SESSIONS {
         id varchar
         user_id int
         login_ip varchar
         user_agent varchar
+        logged_in_at datetime
+        logged_out_at datetime
         created_at datetime
+        updated_at datetime
     }
 
     EXTERNAL_PROVIDERS ||--|{ EXTERNAL_LOGINS : contains
@@ -74,7 +90,7 @@ erDiagram
 
 ```
 
-## Core Entities
+## Transactions
 
 ```mermaid
 
@@ -159,21 +175,32 @@ erDiagram
 
 erDiagram
     CURRENCIES {
-        id int
-        name varchar
-        code varchar
+        id int PK
+        name varchar UK
+        code varchar UK
         symbol varchar
     }
 
     EXCHANGE_RATES {
-        id int
-        currency_id int
-        group_id int
+        id int PK
+        currency_id int FK 
+        base_currency_id int FK
         rate float
         date date
     }
 
+    CURRENCY_CONVERSION_PROVIDERS {
+        id int PK
+        name varchar
+        type int
+        endpoint varchar UK
+        enabled boolean
+        params json
+        run_at string
+    }
+
     CURRENCIES ||--|{ EXCHANGE_RATES : contains
+    CURRENCY_CONVERSION_PROVIDERS }|--|{ CURRENCIES : ""
 
 ```
 
