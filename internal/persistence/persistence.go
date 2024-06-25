@@ -9,13 +9,14 @@ import (
 	godotenv "github.com/joho/godotenv"
 
 	_ "github.com/lib/pq"
+	a "github.com/prulloac/fineasy/internal/auth"
 	c "github.com/prulloac/fineasy/internal/currencies"
 	r "github.com/prulloac/fineasy/internal/persistence/repositories"
 )
 
 type Persistence struct {
 	db                     *sql.DB
-	userRepository         *r.UserRepository
+	authRepository         *a.AuthRepository
 	categoriesRepository   *r.CategoriesRepository
 	currencyRepository     *c.CurrencyRepository
 	groupRepository        *r.GroupRepository
@@ -25,8 +26,8 @@ type Persistence struct {
 	transactionsRepository *r.TransactionsRepository
 }
 
-func (p *Persistence) GetUserRepository() *r.UserRepository {
-	return p.userRepository
+func (p *Persistence) GetAuthRepository() *a.AuthRepository {
+	return p.authRepository
 }
 
 func (p *Persistence) GetCategoriesRepository() *r.CategoriesRepository {
@@ -78,7 +79,7 @@ func NewConnection() *Persistence {
 
 	instance := &Persistence{}
 	instance.db = db
-	instance.userRepository = r.NewUserRepository(db)
+	instance.authRepository = a.NewAuthRepository(db)
 	instance.categoriesRepository = r.NewCategoriesRepository(db)
 	instance.currencyRepository = c.NewCurrencyRepository(db)
 	instance.groupRepository = r.NewGroupRepository(db)
@@ -97,7 +98,7 @@ func (p *Persistence) Close() {
 func (p *Persistence) VerifySchema() {
 	fmt.Println("Verifying schema...")
 	p.createCurrenciesTables()
-	p.GetUserRepository().CreateTable()
+	p.createAuthTables()
 	p.GetGroupRepository().CreateTable()
 	p.GetUserGroupsRepository().CreateTable()
 	p.GetCategoriesRepository().CreateTable()
@@ -115,37 +116,46 @@ func (p *Persistence) DropSchema() {
 	p.GetCategoriesRepository().DropTable()
 	p.GetUserGroupsRepository().DropTable()
 	p.GetGroupRepository().DropTable()
-	p.GetUserRepository().DropTable()
+	p.dropAuthTables()
 	p.dropCurrenciesTables()
 	fmt.Println("Schema dropped!")
 }
 
+func (e *Persistence) createAuthTables() {
+	e.executeSqlFromFile("internal/auth/schema/auth_up.sql",
+		"Auth schema created!",
+		"Error creating auth schema!")
+}
+
+func (e *Persistence) dropAuthTables() {
+	e.executeSqlFromFile("internal/auth/schema/auth_down.sql",
+		"Auth schema dropped!",
+		"Error dropping auth schema!")
+}
+
 func (e *Persistence) createCurrenciesTables() {
-	data, _ := os.ReadFile("internal/currencies/schema/currencies_up.sql")
-
-	if data == nil {
-		panic("Error reading currencies schema file!")
-	}
-
-	_, err := e.db.Exec(string(data))
-	if err != nil {
-		fmt.Println("Error creating currencies schema!")
-		panic(err)
-	}
-	fmt.Println("Currencies schema up!")
+	e.executeSqlFromFile("internal/currencies/schema/currencies_up.sql",
+		"Currencies schema created!",
+		"Error creating currencies schema!")
 }
 
 func (e *Persistence) dropCurrenciesTables() {
-	data, _ := os.ReadFile("internal/currencies/schema/currencies_down.sql")
+	e.executeSqlFromFile("internal/currencies/schema/currencies_down.sql",
+		"Currencies schema dropped!",
+		"Error dropping currencies schema!")
+}
+
+func (e *Persistence) executeSqlFromFile(path string, successMessage string, errorMessage string) {
+	data, _ := os.ReadFile(path)
 
 	if data == nil {
-		panic("Error reading currencies schema file!")
+		panic(fmt.Errorf("Error reading file %s", path))
 	}
 
 	_, err := e.db.Exec(string(data))
 	if err != nil {
-		fmt.Println("Error dropping currencies schema!")
+		fmt.Println(errorMessage)
 		panic(err)
 	}
-	fmt.Println("Currencies schema dropped!")
+	fmt.Println(successMessage)
 }

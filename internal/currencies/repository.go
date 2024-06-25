@@ -3,7 +3,6 @@ package currencies
 import (
 	"database/sql"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/prulloac/fineasy/pkg"
 )
 
@@ -13,22 +12,6 @@ type CurrencyRepository struct {
 
 func NewCurrencyRepository(db *sql.DB) *CurrencyRepository {
 	return &CurrencyRepository{db}
-}
-
-func validateCurrency(c *Currency) error {
-	validate := validator.New()
-	return validate.Struct(c)
-}
-
-func validateExchangeRate(e *ExchangeRate) error {
-	validate := validator.New()
-	validate.RegisterValidation("past_time", pkg.PastTime)
-	return validate.Struct(e)
-}
-
-func validateCurrencyConversionProvider(c *CurrencyConversionProvider) error {
-	validate := validator.New()
-	return validate.Struct(c)
 }
 
 func (c *CurrencyRepository) InsertCurrency(currency Currency) error {
@@ -76,7 +59,7 @@ func (c *CurrencyRepository) GetAllCurrencies() ([]Currency, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = validateCurrency(&currency)
+		err = pkg.ValidateStruct(&currency)
 		if err != nil {
 			return nil, err
 		}
@@ -99,7 +82,7 @@ func (c *CurrencyRepository) GetCurrencyByCode(code string) (Currency, error) {
 	if err != nil {
 		return Currency{}, err
 	}
-	err = validateCurrency(&currency)
+	err = pkg.ValidateStruct(&currency)
 	if err != nil {
 		return Currency{}, err
 	}
@@ -120,7 +103,7 @@ func (c *CurrencyRepository) GetCurrencyByID(id int) (Currency, error) {
 	if err != nil {
 		return Currency{}, err
 	}
-	err = validateCurrency(&currency)
+	err = pkg.ValidateStruct(&currency)
 	if err != nil {
 		return Currency{}, err
 	}
@@ -128,7 +111,7 @@ func (c *CurrencyRepository) GetCurrencyByID(id int) (Currency, error) {
 }
 
 func (c *CurrencyRepository) UpdateCurrency(currency Currency) error {
-	err := validateCurrency(&currency)
+	err := pkg.ValidateStruct(&currency)
 	if err != nil {
 		return err
 	}
@@ -201,7 +184,7 @@ func (c *CurrencyRepository) GetAllExchangeRates() ([]ExchangeRate, error) {
 		if err != nil {
 			return nil, err
 		}
-		err = validateExchangeRate(&exchangeRate)
+		err = pkg.ValidateStruct(&exchangeRate)
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +216,7 @@ func (c *CurrencyRepository) GetAllExchangeRatesForCurrencies(currencyID int, ba
 		if err != nil {
 			return nil, err
 		}
-		err = validateExchangeRate(&exchangeRate)
+		err = pkg.ValidateStruct(&exchangeRate)
 		if err != nil {
 			return nil, err
 		}
@@ -257,7 +240,7 @@ func (c *CurrencyRepository) GetExchangeRateByID(id int) (ExchangeRate, error) {
 	if err != nil {
 		return ExchangeRate{}, err
 	}
-	err = validateExchangeRate(&exchangeRate)
+	err = pkg.ValidateStruct(&exchangeRate)
 	if err != nil {
 		return ExchangeRate{}, err
 	}
@@ -279,7 +262,7 @@ func (c *CurrencyRepository) GetExchangeRateByCurrenciesAndDate(currencyID int, 
 	if err != nil {
 		return ExchangeRate{}, err
 	}
-	err = validateExchangeRate(&exchangeRate)
+	err = pkg.ValidateStruct(&exchangeRate)
 	if err != nil {
 		return ExchangeRate{}, err
 	}
@@ -287,7 +270,7 @@ func (c *CurrencyRepository) GetExchangeRateByCurrenciesAndDate(currencyID int, 
 }
 
 func (c *CurrencyRepository) UpdateExchangeRate(exchangeRate ExchangeRate) error {
-	err := validateExchangeRate(&exchangeRate)
+	err := pkg.ValidateStruct(&exchangeRate)
 	if err != nil {
 		return err
 	}
@@ -361,7 +344,7 @@ func (c *CurrencyRepository) GetAllCurrencyConversionProviders() ([]CurrencyConv
 		if err != nil {
 			return nil, err
 		}
-		err = validateCurrencyConversionProvider(&provider)
+		err = pkg.ValidateStruct(&provider)
 		if err != nil {
 			return nil, err
 		}
@@ -396,7 +379,7 @@ func (c *CurrencyRepository) GetCurrencyConversionProvidersByCurrencyID(currency
 		if err != nil {
 			return nil, err
 		}
-		err = validateCurrencyConversionProvider(&provider)
+		err = pkg.ValidateStruct(&provider)
 		if err != nil {
 			return nil, err
 		}
@@ -422,7 +405,7 @@ func (c *CurrencyRepository) GetCurrencyConversionProviderByID(id int) (Currency
 	if err != nil {
 		return CurrencyConversionProvider{}, err
 	}
-	err = validateCurrencyConversionProvider(&provider)
+	err = pkg.ValidateStruct(&provider)
 	if err != nil {
 		return CurrencyConversionProvider{}, err
 	}
@@ -430,7 +413,7 @@ func (c *CurrencyRepository) GetCurrencyConversionProviderByID(id int) (Currency
 }
 
 func (c *CurrencyRepository) UpdateCurrencyConversionProvider(provider CurrencyConversionProvider) error {
-	err := validateCurrencyConversionProvider(&provider)
+	err := pkg.ValidateStruct(&provider)
 	if err != nil {
 		return err
 	}
