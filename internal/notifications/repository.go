@@ -11,3 +11,11 @@ type NotificationsRepository struct {
 func NewNotificationsRepository(db *sql.DB) *NotificationsRepository {
 	return &NotificationsRepository{db: db}
 }
+
+func (r *NotificationsRepository) CreateTable() error {
+	return nil
+}
+
+func (r *NotificationsRepository) DropTable() error {
+	return nil
+}

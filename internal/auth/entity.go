@@ -8,7 +8,7 @@ import (
 
 type User struct {
 	ID          int       `json:"id" validate:"required,min=1"`
-	Hash        string    `json:"hash" validate:"required,min=1"`
+	Hash        string    `json:"hash" validate:"required,uuid7"`
 	Username    string    `json:"username" validate:"required,min=1"`
 	Email       string    `json:"email" validate:"required,email"`
 	ValidatedAt time.Time `json:"validated_at"`
@@ -30,7 +30,7 @@ type InternalLogin struct {
 	UserID                int       `json:"user_id" validate:"required,min=1"`
 	Email                 string    `json:"email" validate:"required,email"`
 	Password              string    `json:"password" validate:"required,min=1"`
-	PasswordSalt          string    `json:"password_salt" validate:"required,min=1"`
+	PasswordSalt          string    `json:"password_salt" validate:"required,uuid7"`
 	Algorithm             string    `json:"algorithm" validate:"required,min=1"`
 	PasswordLastUpdatedAt time.Time `json:"password_last_updated_at" validate:"required,past_time"`
 	LoginAttempts         int       `json:"login_attempts" validate:"required,min=1"`
@@ -87,7 +87,7 @@ func (e *ExternalLoginProvider) String() string {
 type ExternalLogin struct {
 	ID         int       `json:"id" validate:"required,min=1"`
 	UserID     int       `json:"user_id" validate:"required,min=1"`
-	ProviderID string    `json:"provider_id" validate:"required,min=1"`
+	ProviderID int       `json:"provider_id" validate:"required,min=1"`
 	CreatedAt  time.Time `json:"created_at" validate:"required,past_time"`
 	UpdatedAt  time.Time `json:"updated_at" validate:"required,past_time"`
 }

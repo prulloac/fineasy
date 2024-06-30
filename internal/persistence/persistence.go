@@ -49,7 +49,7 @@ func NewConnection() *Persistence {
 	err := godotenv.Load()
 
 	if err != nil {
-		log.Panicln("Error loading .env file")
+		log.Println("Error loading .env file")
 	}
 
 	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
@@ -77,57 +77,4 @@ func NewConnection() *Persistence {
 func (p *Persistence) Close() {
 	p.db.Close()
 	fmt.Println("Database Successfully disconnected!")
-}
-
-func (p *Persistence) VerifySchema() {
-	fmt.Println("Verifying schema...")
-	p.createCurrenciesTables()
-	p.createAuthTables()
-	fmt.Println("Schema verified!")
-}
-
-func (p *Persistence) DropSchema() {
-	fmt.Println("Dropping schema...")
-	p.dropAuthTables()
-	p.dropCurrenciesTables()
-	fmt.Println("Schema dropped!")
-}
-
-func (e *Persistence) createAuthTables() {
-	e.executeSqlFromFile("internal/auth/schema/auth_up.sql",
-		"Auth schema created!",
-		"Error creating auth schema!")
-}
-
-func (e *Persistence) dropAuthTables() {
-	e.executeSqlFromFile("internal/auth/schema/auth_down.sql",
-		"Auth schema dropped!",
-		"Error dropping auth schema!")
-}
-
-func (e *Persistence) createCurrenciesTables() {
-	e.executeSqlFromFile("internal/currencies/schema/currencies_up.sql",
-		"Currencies schema created!",
-		"Error creating currencies schema!")
-}
-
-func (e *Persistence) dropCurrenciesTables() {
-	e.executeSqlFromFile("internal/currencies/schema/currencies_down.sql",
-		"Currencies schema dropped!",
-		"Error dropping currencies schema!")
-}
-
-func (e *Persistence) executeSqlFromFile(path string, successMessage string, errorMessage string) {
-	data, _ := os.ReadFile(path)
-
-	if data == nil {
-		panic(fmt.Errorf("Error reading file %s", path))
-	}
-
-	_, err := e.db.Exec(string(data))
-	if err != nil {
-		fmt.Println(errorMessage)
-		panic(err)
-	}
-	fmt.Println(successMessage)
 }

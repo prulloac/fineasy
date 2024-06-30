@@ -14,6 +14,105 @@ func NewAuthRepository(db *sql.DB) *AuthRepository {
 	return &AuthRepository{db: db}
 }
 
+func (a *AuthRepository) CreateTable() error {
+	_, err := a.db.Exec(`
+	CREATE TABLE IF NOT EXISTS users (
+		id SERIAL PRIMARY KEY,
+		hash uuid NOT NULL,
+		username VARCHAR(255) NOT NULL,
+		email VARCHAR(255) NOT NULL,
+		validated_at TIMESTAMP,
+		disabled BOOLEAN NOT NULL DEFAULT FALSE,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS internal_logins (
+		id SERIAL PRIMARY KEY,
+		user_id INT NOT NULL references users(id) ON DELETE CASCADE,
+		email VARCHAR(255) NOT NULL,
+		password VARCHAR(255) NOT NULL,
+		password_salt uuid NOT NULL,
+		algorithm INTEGER NOT NULL,
+		password_last_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		login_attempts INT NOT NULL DEFAULT 0,
+		last_login_attempt TIMESTAMP,
+		last_login_success TIMESTAMP,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS login_tokens (
+		id SERIAL PRIMARY KEY,
+		user_id INT NOT NULL references users(id) ON DELETE CASCADE,
+		token VARCHAR(255) NOT NULL,
+		token_type INTEGER NOT NULL,
+		expires_at TIMESTAMP NOT NULL,
+		used_at TIMESTAMP,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS external_login_providers (
+		id SERIAL PRIMARY KEY,
+		name VARCHAR(255) NOT NULL,
+		type INTEGER NOT NULL,
+		endpoint VARCHAR(255) NOT NULL,
+		enabled BOOLEAN NOT NULL DEFAULT TRUE,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS external_logins (
+		id SERIAL PRIMARY KEY,
+		user_id INT NOT NULL references users(id) ON DELETE CASCADE,
+		provider_id INT NOT NULL references external_login_providers(id) ON DELETE CASCADE,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS external_login_tokens (
+		id SERIAL PRIMARY KEY,
+		user_id INT NOT NULL references users(id) ON DELETE CASCADE,
+		provider_id INT NOT NULL references external_login_providers(id) ON DELETE CASCADE,
+		login_ip VARCHAR(255) NOT NULL,
+		user_agent VARCHAR(255) NOT NULL,
+		logged_in_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		token TEXT NOT NULL,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE TABLE IF NOT EXISTS user_sessions (
+		id SERIAL PRIMARY KEY,
+		user_id INT NOT NULL references users(id) ON DELETE CASCADE,
+		login_ip VARCHAR(255) NOT NULL,
+		user_agent VARCHAR(255) NOT NULL,
+		logged_in_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		logged_out_at TIMESTAMP,
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	);
+
+	CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON users (email);
+	CREATE UNIQUE INDEX IF NOT EXISTS internal_logins_email_idx ON internal_logins (email);
+	CREATE UNIQUE INDEX IF NOT EXISTS external_login_providers_name_idx ON external_login_providers (name, type, endpoint);
+	CREATE UNIQUE INDEX IF NOT EXISTS external_logins_user_id_provider_id_idx ON external_logins (user_id, provider_id);
+	`)
+	return err
+}
+
+func (a *AuthRepository) DropTable() error {
+	_, err := a.db.Exec(`
+	DROP TABLE IF EXISTS user_sessions;
+	DROP TABLE IF EXISTS external_login_tokens;
+	DROP TABLE IF EXISTS external_logins;
+	DROP TABLE IF EXISTS external_login_providers;
+	DROP TABLE IF EXISTS login_tokens;
+	DROP TABLE IF EXISTS internal_logins;
+	DROP TABLE IF EXISTS users;
+	`)
+	return err
+}
+
 func (a *AuthRepository) InsertUser(u User) error {
 	// check if user already exists
 	var id int
@@ -122,7 +221,7 @@ func (a *AuthRepository) GetUserByEmail(email string) (User, error) {
 	return u, nil
 }
 
-func (a *AuthRepository) UpdateUser(u *User) error {
+func (a *AuthRepository) UpdateUser(u User) error {
 	err := pkg.ValidateStruct(u)
 	if err != nil {
 		return err
@@ -271,7 +370,7 @@ func (a *AuthRepository) GetInternalLoginByEmail(email string) (InternalLogin, e
 	return i, nil
 }
 
-func (a *AuthRepository) UpdateInternalLogin(i *InternalLogin) error {
+func (a *AuthRepository) UpdateInternalLogin(i InternalLogin) error {
 	err := pkg.ValidateStruct(i)
 	if err != nil {
 		return err
@@ -418,7 +517,7 @@ func (a *AuthRepository) GetLoginTokenByTokenAndUserID(token string, id int) (Lo
 	return l, nil
 }
 
-func (a *AuthRepository) UpdateLoginToken(l *LoginToken) error {
+func (a *AuthRepository) UpdateLoginToken(l LoginToken) error {
 	err := pkg.ValidateStruct(l)
 	if err != nil {
 		return err
@@ -562,7 +661,7 @@ func (a *AuthRepository) GetExternalLoginProviderByID(id int) (ExternalLoginProv
 	return e, nil
 }
 
-func (a *AuthRepository) UpdateExternalLoginProvider(e *ExternalLoginProvider) error {
+func (a *AuthRepository) UpdateExternalLoginProvider(e ExternalLoginProvider) error {
 	err := pkg.ValidateStruct(e)
 	if err != nil {
 		return err
@@ -702,25 +801,6 @@ func (a *AuthRepository) GetExternalLoginByID(id int) (ExternalLogin, error) {
 	return e, nil
 }
 
-func (a *AuthRepository) UpdateExternalLogin(e *ExternalLogin) error {
-	err := pkg.ValidateStruct(e)
-	if err != nil {
-		return err
-	}
-	_, err = a.db.Exec(`
-	UPDATE external_logins
-	SET
-		user_id = $1,
-		provider_id = $2,
-		updated_at = CURRENT_TIMESTAMP
-	WHERE id = $3
-	`, e.UserID, e.ProviderID, e.ID)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func (a *AuthRepository) DeleteExternalLogin(id int) error {
 	_, err := a.db.Exec(`
 	DELETE FROM external_logins
@@ -846,28 +926,6 @@ func (a *AuthRepository) GetExternalLoginTokenByTokenAndUserID(token string, id 
 		return ExternalLoginToken{}, err
 	}
 	return e, nil
-}
-
-func (a *AuthRepository) UpdateExternalLoginToken(e *ExternalLoginToken) error {
-	err := pkg.ValidateStruct(e)
-	if err != nil {
-		return err
-	}
-	_, err = a.db.Exec(`
-	UPDATE external_login_tokens
-	SET
-		user_id = $1,
-		provider_id = $2,
-		login_ip = $3,
-		user_agent = $4,
-		logged_in_at = $5,
-		token = $6
-	WHERE id = $7
-	`, e.UserID, e.ProviderID, e.LoginIP, e.UserAgent, e.LoggedInAt, e.Token, e.ID)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (a *AuthRepository) DeleteExternalLoginToken(id int) error {

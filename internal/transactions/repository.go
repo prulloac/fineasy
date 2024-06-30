@@ -11,3 +11,11 @@ type TransactionsRepository struct {
 func NewTransactionsRepository(db *sql.DB) *TransactionsRepository {
 	return &TransactionsRepository{db: db}
 }
+
+func (r *TransactionsRepository) CreateTable() error {
+	return nil
+}
+
+func (r *TransactionsRepository) DropTable() error {
+	return nil
+}
