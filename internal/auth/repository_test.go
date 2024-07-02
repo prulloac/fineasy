@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"database/sql"
 	"reflect"
 	"strings"
@@ -9,7 +10,34 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/google/uuid"
+	"github.com/prulloac/fineasy/tests"
 )
+
+func TestCreateAndDropTables(t *testing.T) {
+	ctx := context.Background()
+	container, err := tests.StartPostgresContainer(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer container.Terminate(ctx)
+
+	db, err := container.DB()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var p = AuthRepository{db}
+
+	err = p.CreateTable()
+	if err != nil {
+		t.Errorf("error was not expected while creating tables: %s", err)
+	}
+
+	err = p.DropTable()
+	if err != nil {
+		t.Errorf("error was not expected while dropping tables: %s", err)
+	}
+}
 
 func TestInsertUser(t *testing.T) {
 	db, mock, err := sqlmock.New()

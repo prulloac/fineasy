@@ -212,8 +212,10 @@ erDiagram
     USER_PREFERENCES {
         id int
         user_id int
-        key varchar
-        value text
+        theme varchar
+        language varchar
+        entries json
+        upserted_at datetime
     }
 
 ```
@@ -226,11 +228,13 @@ erDiagram
 
     NOTIFICATION_TEMPLATES {
         id int
-        title varchar
-        message text
+        name varchar
+        subject varchar
+        body text
         notification_type int
         notification_channel int
         created_at datetime
+        updated_at datetime
     }
 
     NOTIFICATION_TYPES {
@@ -241,7 +245,6 @@ erDiagram
 
     NOTIFICATION_CHANNELS {
         id int
-        user_id int
         channel varchar
         created_at datetime
         updated_at datetime
@@ -251,9 +254,7 @@ erDiagram
         id int
         user_id int
         template_id int
-        channel_id int
         created_at datetime
-        updated_at datetime
         read_at datetime
     }
 
