@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/pkg"
 )
@@ -70,13 +71,13 @@ func (s *Service) Register(i RegisterInput, rm pkg.RequestMeta) (User, error) {
 	_, err = s.repo.getUserID(i.Email)
 	if err == sql.ErrNoRows {
 		salt := pkg.GenerateSalt()
-		hashedPassword := pkg.HashPassword(i.Password, salt, "")
+		hashedPassword := pkg.HashPassword(i.Password, salt, SHA256.Name())
 		user, err := s.repo.createUser(i.Username, i.Email)
 		if err != nil {
 			log.Printf("⚠️ Error creating user: %s", err)
 			return User{}, err
 		}
-		il, err := s.repo.createInternalLogin(user.ID, hashedPassword, salt, uint16(None))
+		il, err := s.repo.createInternalLogin(user.ID, hashedPassword, salt, uint16(SHA256))
 		if err != nil {
 			log.Printf("⚠️ Error creating internal user: %s", err)
 			return User{}, err
@@ -90,6 +91,15 @@ func (s *Service) Register(i RegisterInput, rm pkg.RequestMeta) (User, error) {
 		return User{}, err
 	}
 	return User{}, &ErrUserAlreadyExists{}
+}
+
+func (s *Service) Me(token *jwt.Token) (User, error) {
+	userHash := token.Claims.(jwt.MapClaims)["sub"].(string)
+	user, err := s.repo.getUserByHash(userHash)
+	if err != nil {
+		return User{}, err
+	}
+	return user, nil
 }
 
 func (s *Service) logUserSession(uid int, rm pkg.RequestMeta) error {

@@ -5,8 +5,9 @@ import (
 )
 
 type RequestMeta struct {
-	Ip    string
-	Agent string
+	Ip            string
+	Agent         string
+	Authorization string
 }
 
 func GetClientIp(r *http.Request) string {
@@ -22,7 +23,8 @@ func GetClientIp(r *http.Request) string {
 
 func GetRequestMeta(r *http.Request) RequestMeta {
 	return RequestMeta{
-		Ip:    GetClientIp(r),
-		Agent: r.UserAgent(),
+		Ip:            GetClientIp(r),
+		Agent:         r.UserAgent(),
+		Authorization: r.Header.Get("Authorization"),
 	}
 }

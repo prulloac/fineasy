@@ -33,7 +33,7 @@ func (a *AuthRepository) CreateTable() error {
 		user_id INT NOT NULL references users(id) ON DELETE CASCADE,
 		email VARCHAR(255) NOT NULL,
 		password VARCHAR(255) NOT NULL,
-		password_salt uuid NOT NULL,
+		password_salt VARCHAR(255) NOT NULL,
 		algorithm INTEGER NOT NULL,
 		password_last_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 		login_attempts INT NOT NULL DEFAULT 0,
@@ -231,4 +231,32 @@ func (a *AuthRepository) logUserSession(uid int, ip string, userAgent string) er
 	VALUES ($1, $2, $3)
 	`, uid, ip, userAgent)
 	return err
+}
+
+func (a *AuthRepository) getUserByHash(hash string) (User, error) {
+	var user User
+	err := a.DB.QueryRow(`
+		SELECT
+			id,
+			hash,
+			username,
+			email,
+			validated_at,
+			disabled,
+			created_at,
+			updated_at
+		FROM users
+		WHERE hash = $1
+		`, hash).
+		Scan(
+			&user.ID,
+			&user.Hash,
+			&user.Username,
+			&user.Email,
+			&user.ValidatedAt,
+			&user.Disabled,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+		)
+	return user, err
 }

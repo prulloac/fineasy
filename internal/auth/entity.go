@@ -51,8 +51,34 @@ func (a Algorithm) Name() string {
 		return "SHA3_512"
 	case Base64:
 		return "Base64"
-	default:
+	case None:
 		return ""
+	default:
+		panic("invalid algorithm")
+	}
+}
+
+type TokenTypes uint16
+
+const (
+	AccessToken TokenTypes = iota
+	RefreshToken
+	PasswordResetToken
+	EmailVerificationToken
+)
+
+func (t TokenTypes) Name() string {
+	switch t {
+	case AccessToken:
+		return "AccessToken"
+	case RefreshToken:
+		return "RefreshToken"
+	case PasswordResetToken:
+		return "PasswordResetToken"
+	case EmailVerificationToken:
+		return "EmailVerificationToken"
+	default:
+		panic("invalid token type")
 	}
 }
 
@@ -61,7 +87,7 @@ type InternalLogin struct {
 	UserID                int       `json:"user_id" validate:"required,min=1"`
 	Email                 string    `json:"email" validate:"required,email"`
 	Password              string    `json:"password" validate:"required,min=1"`
-	PasswordSalt          string    `json:"password_salt" validate:"required,uuid"`
+	PasswordSalt          string    `json:"password_salt" validate:"required"`
 	Algorithm             Algorithm `json:"algorithm" validate:"required,min=0"`
 	PasswordLastUpdatedAt time.Time `json:"password_last_updated_at" validate:"required,past_time"`
 	LoginAttempts         int       `json:"login_attempts" validate:"required,min=1"`

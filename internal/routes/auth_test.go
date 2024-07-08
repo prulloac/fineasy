@@ -3,6 +3,7 @@ package routes
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -17,7 +18,9 @@ func TestInternalUserFlow(t *testing.T) {
 	container := tests.StartPostgresContainer(ctx, t)
 	p := auth.AuthRepository{DB: container.DB}
 	p.CreateTable()
+	tests.LoadTestEnv()
 	handler := Run()
+	token := ""
 
 	t.Run("valid register input", func(t *testing.T) {
 
@@ -90,6 +93,38 @@ func TestInternalUserFlow(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusOK)
+		}
+
+		expectedEmail := `"email":"test@email.com"`
+		expectedUsername := `"username":"test"`
+		if !strings.Contains(rr.Body.String(), expectedEmail) || !strings.Contains(rr.Body.String(), expectedUsername) {
+			t.Errorf("handler returned unexpected body: got %v",
+				rr.Body.String())
+		}
+
+		if rr.Header().Get("Authorization") == "" {
+			t.Errorf("handler did not return token")
+		}
+
+		token = rr.Header().Get("Authorization")
+	})
+
+	t.Run("valid me request", func(t *testing.T) {
+
+		req, err := http.NewRequest("GET", "/v1/auth/me", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		log.Println(token)
+
+		req.Header.Set("Authorization", token)
 		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
