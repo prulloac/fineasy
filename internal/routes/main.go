@@ -1,12 +1,13 @@
-package api
+package routes
 
 import (
 	"github.com/gin-gonic/gin"
 )
 
-func Run() {
+func Run() *gin.Engine {
 	server := gin.Default()
 	v1 := server.Group("/v1")
 	addPingRoutes(v1)
-	server.Run()
+	addAuthRoutes(v1)
+	return server
 }

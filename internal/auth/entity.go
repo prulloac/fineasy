@@ -1,20 +1,23 @@
 package auth
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
 )
 
 type User struct {
-	ID          int       `json:"id" validate:"required,min=1"`
-	Hash        string    `json:"hash" validate:"required,uuid7"`
-	Username    string    `json:"username" validate:"required,min=1"`
-	Email       string    `json:"email" validate:"required,email"`
-	ValidatedAt time.Time `json:"validated_at"`
-	Disabled    bool      `json:"disabled"`
-	CreatedAt   time.Time `json:"created_at" validate:"required,past_time"`
-	UpdatedAt   time.Time `json:"updated_at" validate:"required,past_time"`
+	ID                int           `json:"id" validate:"required,min=1"`
+	Hash              string        `json:"hash" validate:"required,uuid7"`
+	Username          string        `json:"username" validate:"required,min=1"`
+	Email             string        `json:"email" validate:"required,email"`
+	ValidatedAt       sql.NullTime  `json:"validated_at"`
+	Disabled          bool          `json:"disabled"`
+	CreatedAt         time.Time     `json:"created_at" validate:"required,past_time"`
+	UpdatedAt         time.Time     `json:"updated_at" validate:"required,past_time"`
+	internalLoginData InternalLogin `json:"-"`
+	externalLoginData ExternalLogin `json:"-"`
 }
 
 func (u *User) String() string {
@@ -25,13 +28,41 @@ func (u *User) String() string {
 	return string(out)
 }
 
+type Algorithm uint16
+
+const (
+	None Algorithm = iota
+	SHA256
+	SHA512
+	SHA3_256
+	SHA3_512
+	Base64
+)
+
+func (a Algorithm) Name() string {
+	switch a {
+	case SHA256:
+		return "SHA256"
+	case SHA512:
+		return "SHA512"
+	case SHA3_256:
+		return "SHA3_256"
+	case SHA3_512:
+		return "SHA3_512"
+	case Base64:
+		return "Base64"
+	default:
+		return ""
+	}
+}
+
 type InternalLogin struct {
 	ID                    int       `json:"id" validate:"required,min=1"`
 	UserID                int       `json:"user_id" validate:"required,min=1"`
 	Email                 string    `json:"email" validate:"required,email"`
 	Password              string    `json:"password" validate:"required,min=1"`
-	PasswordSalt          string    `json:"password_salt" validate:"required,uuid7"`
-	Algorithm             string    `json:"algorithm" validate:"required,min=1"`
+	PasswordSalt          string    `json:"password_salt" validate:"required,uuid"`
+	Algorithm             Algorithm `json:"algorithm" validate:"required,min=0"`
 	PasswordLastUpdatedAt time.Time `json:"password_last_updated_at" validate:"required,past_time"`
 	LoginAttempts         int       `json:"login_attempts" validate:"required,min=1"`
 	LastLoginAttempt      time.Time `json:"last_login_attempt" validate:"required,past_time"`
@@ -133,7 +164,7 @@ type UserSession struct {
 func (u *UserSession) String() string {
 	out, err := json.Marshal(u)
 	if err != nil {
-		return fmt.Sprintf("%+v", u.UserAgent)
+		return fmt.Sprintf("%+v", u.ID)
 	}
 	return string(out)
 }

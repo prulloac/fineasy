@@ -1,4 +1,4 @@
-package currencies
+package transactions
 
 import (
 	"context"
@@ -11,7 +11,7 @@ func TestCreateAndDropTables(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
 
-	var p = CurrencyRepository{DB: container.DB}
+	var p = TransactionsRepository{container.DB}
 
 	err := p.CreateTable()
 	if err != nil {

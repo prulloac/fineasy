@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
 	server "github.com/prulloac/fineasy/internal/routes"
 )
 
 func main() {
-	fmt.Println("Server is running...")
+	log.Println("Server is running...")
 	server.Run()
 }

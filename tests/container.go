@@ -3,7 +3,9 @@ package tests
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"log"
+	"os"
+	"testing"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -16,10 +18,10 @@ type PostgresContainer struct {
 	container testcontainers.Container
 	URI       string
 	Terminate func(context.Context) error
-	DB        func() (*sql.DB, error)
+	DB        *sql.DB
 }
 
-func StartPostgresContainer(ctx context.Context) (*PostgresContainer, error) {
+func StartPostgresContainer(ctx context.Context, t *testing.T) PostgresContainer {
 	container, err := postgres.RunContainer(ctx,
 		testcontainers.WithImage("postgres:alpine"),
 		postgres.WithDatabase("fineasy"),
@@ -31,22 +33,29 @@ func StartPostgresContainer(ctx context.Context) (*PostgresContainer, error) {
 	)
 
 	if err != nil {
-		return nil, err
+		t.Errorf("error was not expected while starting postgres container: %s", err)
 	}
 
 	state, err := container.State(ctx)
 
 	if err != nil {
-		return nil, err
+		t.Errorf("error was not expected while getting container state: %s", err)
 	}
 
-	fmt.Println("Container state:", state.Running)
+	log.Println("Container state:", state.Running)
 
 	connectionString, err := container.ConnectionString(ctx, "sslmode=disable")
-
 	if err != nil {
-		return nil, err
+		t.Errorf("error was not expected while getting connection string: %s", err)
 	}
 
-	return &PostgresContainer{container, connectionString, container.Terminate, func() (*sql.DB, error) { return sql.Open("postgres", connectionString) }}, nil
+	os.Setenv("DATABASE_URL", connectionString)
+
+	db, err := sql.Open("postgres", connectionString)
+
+	if err != nil {
+		t.Errorf("error was not expected while connecting to database: %s", err)
+	}
+
+	return PostgresContainer{container, connectionString, container.Terminate, db}
 }

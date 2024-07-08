@@ -10,39 +10,30 @@ import (
 
 func TestSchemaUp(t *testing.T) {
 	ctx := context.Background()
-	container, err := tests.StartPostgresContainer(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer container.Terminate(ctx)
+	container := tests.StartPostgresContainer(ctx, t)
 
 	os.Args = []string{"", "up"}
 	os.Setenv("DATABASE_URL", container.URI)
 	main()
+	container.Terminate(ctx)
 }
 
 func TestSchemaDown(t *testing.T) {
 	ctx := context.Background()
-	container, err := tests.StartPostgresContainer(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer container.Terminate(ctx)
+	container := tests.StartPostgresContainer(ctx, t)
 
 	os.Args = []string{"", "down"}
 	os.Setenv("DATABASE_URL", container.URI)
 	main()
+	container.Terminate(ctx)
 }
 
 func TestSchemaReset(t *testing.T) {
 	ctx := context.Background()
-	container, err := tests.StartPostgresContainer(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer container.Terminate(ctx)
+	container := tests.StartPostgresContainer(ctx, t)
 
 	os.Args = []string{"", "reset"}
 	os.Setenv("DATABASE_URL", container.URI)
 	main()
+	container.Terminate(ctx)
 }

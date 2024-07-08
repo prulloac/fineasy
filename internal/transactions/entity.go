@@ -96,23 +96,25 @@ func (c *Category) String() string {
 	return string(out)
 }
 
+type transactionType uint8
+
 type Transaction struct {
-	ID              int       `json:"id" validate:"required,min=1"`
-	CategoryID      int       `json:"category_id" validate:"required,min=1"`
-	Currency        string    `json:"currency" validate:"required,min=1"`
-	CurrencyRate    float64   `json:"currency_rate" validate:"required,min=0"`
-	TransactionType string    `json:"transaction_type" validate:"required,min=1"`
-	BudgetID        int       `json:"budget_id" validate:"required,min=1"`
-	Amount          float64   `json:"amount" validate:"required,min=0"`
-	Date            time.Time `json:"date" validate:"required,past_time"`
-	ExecutedByName  int       `json:"executed_by" validate:"required,min=1"`
-	ExecutedByID    int       `json:"executed_by_id"`
-	Description     string    `json:"description" validate:"required,min=1"`
-	ReceiptURL      string    `json:"receipt_url" validate:"required,min=1"`
-	RegisteredBy    int       `json:"registered_by" validate:"required,min=1"`
-	RegisteredAt    time.Time `json:"registered_at" validate:"required,past_time"`
-	CreatedAt       time.Time `json:"created_at" validate:"required,past_time"`
-	UpdatedAt       time.Time `json:"updated_at" validate:"required,past_time"`
+	ID              int             `json:"id" validate:"required,min=1"`
+	CategoryID      int             `json:"category_id" validate:"required,min=1"`
+	Currency        string          `json:"currency" validate:"required,min=1"`
+	CurrencyRate    float64         `json:"currency_rate" validate:"required,min=0"`
+	TransactionType transactionType `json:"transaction_type" validate:"required,min=1"`
+	BudgetID        int             `json:"budget_id" validate:"required,min=1"`
+	Amount          float64         `json:"amount" validate:"required,min=0"`
+	Date            time.Time       `json:"date" validate:"required,past_time"`
+	ExecutedByName  int             `json:"executed_by" validate:"required,min=1"`
+	ExecutedByID    int             `json:"executed_by_id"`
+	Description     string          `json:"description" validate:"required,min=1"`
+	ReceiptURL      string          `json:"receipt_url" validate:"required,min=1"`
+	RegisteredBy    int             `json:"registered_by" validate:"required,min=1"`
+	RegisteredAt    time.Time       `json:"registered_at" validate:"required,past_time"`
+	CreatedAt       time.Time       `json:"created_at" validate:"required,past_time"`
+	UpdatedAt       time.Time       `json:"updated_at" validate:"required,past_time"`
 }
 
 func (t *Transaction) String() string {

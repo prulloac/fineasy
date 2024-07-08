@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log"
 
+	"github.com/prulloac/fineasy/internal/auth"
 	"github.com/prulloac/fineasy/internal/persistence"
 )
 
@@ -13,7 +14,7 @@ func main() {
 	defer p.Close()
 	if flag.Arg(0) == "down" {
 		schemaDown(p)
-		fmt.Println("Database schema has been dropped.")
+		log.Println("Database schema has been dropped.")
 		return
 	} else if flag.Arg(0) == "reset" {
 		schemaDown(p)
@@ -21,7 +22,7 @@ func main() {
 	} else if flag.Arg(0) == "up" {
 		schemaUp(p)
 	}
-	fmt.Println("Database schema is up to date.")
+	log.Println("Database schema is up to date.")
 }
 
 type schemaOperation interface {
@@ -31,11 +32,7 @@ type schemaOperation interface {
 
 func schemaUp(p *persistence.Persistence) {
 	var operations = []schemaOperation{
-		p.GetAuthRepository(),
-		p.GetCurrencyRepository(),
-		p.GetTransactionsRepository(),
-		p.GetNotificationsRepository(),
-		p.GetUserPreferencesRepository(),
+		&auth.AuthRepository{DB: p.Session()},
 	}
 
 	for _, operation := range operations {
@@ -48,11 +45,7 @@ func schemaUp(p *persistence.Persistence) {
 
 func schemaDown(p *persistence.Persistence) {
 	var operations = []schemaOperation{
-		p.GetAuthRepository(),
-		p.GetCurrencyRepository(),
-		p.GetTransactionsRepository(),
-		p.GetNotificationsRepository(),
-		p.GetUserPreferencesRepository(),
+		&auth.AuthRepository{DB: p.Session()},
 	}
 
 	for _, operation := range operations {
