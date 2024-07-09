@@ -6,14 +6,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/prulloac/fineasy/internal/auth"
+	"github.com/prulloac/fineasy/internal/middleware"
+	m "github.com/prulloac/fineasy/internal/middleware"
 	"github.com/prulloac/fineasy/pkg"
 )
 
 func addAuthRoutes(rg *gin.RouterGroup) {
-	authGroup := rg.Group("/auth")
-	authGroup.POST("/register", register)
-	authGroup.POST("/login", login)
-	authGroup.Use(createJwtMiddleware()).GET("/me", me)
+	g := rg.Group("/auth")
+	g.POST("/register", register)
+	g.POST("/login", login)
+	g.GET("/me", m.SecureRequest, me)
 }
 
 func register(c *gin.Context) {
@@ -23,7 +25,6 @@ func register(c *gin.Context) {
 		return
 	}
 	s := auth.NewService()
-	defer s.Close()
 	rm := pkg.GetRequestMeta(c.Request)
 	user, err := s.Register(i, rm)
 	if err != nil {
@@ -40,20 +41,18 @@ func login(c *gin.Context) {
 		return
 	}
 	s := auth.NewService()
-	defer s.Close()
 	rm := pkg.GetRequestMeta(c.Request)
 	user, err := s.Login(i, rm)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	c.Writer.Header().Set("Authorization", generateBearerToken(user))
+	c.Writer.Header().Set("Authorization", middleware.GenerateBearerToken(user))
 	c.JSON(http.StatusOK, user)
 }
 
 func me(c *gin.Context) {
 	s := auth.NewService()
-	defer s.Close()
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing token"})

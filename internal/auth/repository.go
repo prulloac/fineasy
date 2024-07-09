@@ -67,14 +67,12 @@ func (a *AuthRepository) CreateTable() error {
 		id SERIAL PRIMARY KEY,
 		user_id INT NOT NULL references users(id) ON DELETE CASCADE,
 		provider_id INT NOT NULL references external_login_providers(id) ON DELETE CASCADE,
-		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 	);
 
 	CREATE TABLE IF NOT EXISTS external_login_tokens (
 		id SERIAL PRIMARY KEY,
-		user_id INT NOT NULL references users(id) ON DELETE CASCADE,
-		provider_id INT NOT NULL references external_login_providers(id) ON DELETE CASCADE,
+		external_login_id INT NOT NULL references external_logins(id) ON DELETE CASCADE,
 		login_ip VARCHAR(255) NOT NULL,
 		user_agent VARCHAR(255) NOT NULL,
 		logged_in_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -1,5 +1,7 @@
 package auth
 
+import e "github.com/prulloac/fineasy/internal/errors"
+
 type RegisterInput struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
@@ -8,7 +10,7 @@ type RegisterInput struct {
 
 func (i RegisterInput) Validate() error {
 	if i.Email == "" || i.Password == "" || i.Username == "" {
-		return &ErrInvalidInput{}
+		return &e.ErrInvalidInput{}
 	}
 	return nil
 }
@@ -20,7 +22,7 @@ type LoginInput struct {
 
 func (i LoginInput) Validate() error {
 	if i.Email == "" || i.Password == "" {
-		return &ErrInvalidInput{}
+		return &e.ErrInvalidInput{}
 	}
 	return nil
 }
