@@ -48,6 +48,10 @@ const (
 	Declined
 )
 
+func (f FriendRequestStatus) String() string {
+	return [...]string{"Pending", "Accepted", "Declined"}[f]
+}
+
 type FriendRequest struct {
 	ID        int                 `json:"id", validate:"required,min=1"`
 	UserID    int                 `json:"user_id", validate:"required,min=1"`

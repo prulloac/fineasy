@@ -23,3 +23,9 @@ type ErrForbidden struct{}
 func (e ErrForbidden) Error() string {
 	return "forbidden"
 }
+
+type ErrBadRequest struct{}
+
+func (e ErrBadRequest) Error() string {
+	return "bad request"
+}
