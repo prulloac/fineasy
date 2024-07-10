@@ -39,6 +39,7 @@ erDiagram
         token varchar
         token_type int
         expires_at datetime
+        used_at datetime
         created_at datetime
     }
 
@@ -57,13 +58,11 @@ erDiagram
         user_id int
         provider_id varchar
         created_at datetime
-        updated_at datetime
     }
 
     EXTERNAL_LOGIN_TOKENS {
         id int
-        user_id int
-        provider_id int
+        external_login_id int
         login_ip varchar
         user_agent varchar
         logged_in_at datetime
@@ -82,19 +81,38 @@ erDiagram
         updated_at datetime
     }
 
-    EXTERNAL_PROVIDERS ||--|{ EXTERNAL_LOGINS : contains
+    EXTERNAL_LOGIN_PROVIDERS ||--|{ EXTERNAL_LOGINS : contains
+    EXTERNAL_LOGIN_TOKENS }|--|| EXTERNAL_LOGINS : contains
     EXTERNAL_LOGINS }o--|| USERS : contains
     LOGIN_TOKENS }|--|| USERS : contains
-    INTERNAL_LOGIN |o--|| USERS : contains
-    USERS ||--|{ SESSIONS : contains
+    INTERNAL_LOGINS |o--|| USERS : contains
+    USERS ||--|{ USER_SESSIONS : contains
 
 ```
 
-## Transactions
+## Social
 
 ```mermaid
 
 erDiagram
+    FRIENDS {
+        id int
+        user_id int
+        friend_id int
+        created_at datetime
+        updated_at datetime
+        relation_type int
+    }
+
+    FRIEND_REQUESTS {
+        id int
+        user_id int
+        friend_id int
+        status int
+        created_at datetime
+        updated_at datetime
+    }
+
     GROUPS {
         id int
         name varchar
@@ -107,8 +125,24 @@ erDiagram
         id int
         user_id int
         group_id int
+        joined_at datetime
+        left_at datetime
     }
 
+    GROUPS ||--|{ USER_GROUPS : contains
+    USERS ||--|{ FRIENDS : contains
+    USERS ||--|{ FRIEND_REQUESTS : contains
+    USERS ||--|{ USER_GROUPS : contains
+
+```
+
+
+
+## Transactions
+
+```mermaid
+
+erDiagram
     ACCOUNTS {
         id int
         created_by int
@@ -161,8 +195,6 @@ erDiagram
         updated_at datetime
     }
 
-    GROUPS ||--|{ USER_GROUPS : contains
-    GROUPS ||--|{ ACCOUNTS : contains
     ACCOUNTS ||--|{ BUDGETS : contains
     CATEGORIES ||--o{ TRANSACTIONS : contains
     BUDGETS ||--o{ TRANSACTIONS : contains

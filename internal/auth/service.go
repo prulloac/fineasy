@@ -6,18 +6,21 @@ import (
 	"log"
 
 	"github.com/golang-jwt/jwt/v5"
+	e "github.com/prulloac/fineasy/internal/errors"
 	"github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/pkg"
 )
 
 type Service struct {
-	repo        AuthRepository
-	persistence persistence.Persistence
+	repo        *AuthRepository
+	persistence *persistence.Persistence
 }
 
-func NewService() Service {
-	p := persistence.NewConnection()
-	return Service{repo: *NewAuthRepository(p.Session()), persistence: *p}
+func NewService() *Service {
+	instance := &Service{}
+	instance.persistence = persistence.NewConnection()
+	instance.repo = NewAuthRepository(instance.persistence.Session())
+	return instance
 }
 
 func (s *Service) Close() {
@@ -34,7 +37,7 @@ func (s *Service) Login(i LoginInput, rm pkg.RequestMeta) (User, error) {
 	uid, err := s.repo.getUserID(i.Email)
 	if err != nil {
 		log.Printf("⚠️ Error logging in user: %s", err)
-		err := &ErrInvalidInput{}
+		err := &e.ErrInvalidInput{}
 		return User{}, err
 	}
 	isLocked, err := s.repo.isAccountLocked(uid)
@@ -42,7 +45,7 @@ func (s *Service) Login(i LoginInput, rm pkg.RequestMeta) (User, error) {
 		return User{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	if isLocked {
-		err := &ErrAccountLocked{}
+		err := &e.ErrAccountLocked{}
 		log.Printf("⚠️ Error logging in user: %s", err)
 		return User{}, err
 	}
@@ -54,7 +57,7 @@ func (s *Service) Login(i LoginInput, rm pkg.RequestMeta) (User, error) {
 	user, err := s.repo.getInternalLoginUser(i.Email, hashedPassword)
 	if err != nil {
 		log.Printf("⚠️ Error logging in user: %s", err)
-		err := &ErrInvalidInput{}
+		err := &e.ErrInvalidInput{}
 		s.repo.increaseLoginAttempts(uid)
 		return User{}, err
 	}
@@ -90,10 +93,14 @@ func (s *Service) Register(i RegisterInput, rm pkg.RequestMeta) (User, error) {
 	if err != nil {
 		return User{}, err
 	}
-	return User{}, &ErrUserAlreadyExists{}
+	return User{}, &e.ErrUserAlreadyExists{}
 }
 
 func (s *Service) Me(token *jwt.Token) (User, error) {
+	return s.GetUserFromToken(token)
+}
+
+func (s *Service) GetUserFromToken(token *jwt.Token) (User, error) {
 	userHash := token.Claims.(jwt.MapClaims)["sub"].(string)
 	user, err := s.repo.getUserByHash(userHash)
 	if err != nil {
