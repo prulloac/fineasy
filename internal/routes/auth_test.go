@@ -3,7 +3,6 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -121,8 +120,6 @@ func TestInternalUserFlow(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-
-		log.Println(token)
 
 		req.Header.Set("Authorization", token)
 		rr := httptest.NewRecorder()

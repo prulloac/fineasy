@@ -10,31 +10,11 @@ import (
 	"github.com/prulloac/fineasy/tests"
 )
 
-func TestCreateAndDropTables(t *testing.T) {
-	ctx := context.Background()
-	container := tests.StartPostgresContainer(ctx, t)
-
-	var p = AuthRepository{DB: container.DB}
-
-	err := p.CreateTable()
-	if err != nil {
-		t.Errorf("error was not expected while creating tables: %s", err)
-	}
-
-	err = p.DropTable()
-	if err != nil {
-		t.Errorf("error was not expected while dropping tables: %s", err)
-	}
-
-	container.Terminate(ctx)
-}
-
-func TestCreateUser(t *testing.T) {
+func TestAuthPersistence(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
 
 	var s = NewService()
-	s.repo.DropTable()
 	err := s.repo.CreateTable()
 	if err != nil {
 		t.Errorf("error was not expected while creating tables: %s", err)
@@ -57,6 +37,10 @@ func TestCreateUser(t *testing.T) {
 				t.Errorf("expected %s to be %v, got %v", i.Name, reflect.ValueOf(u).FieldByName(i.Name).Interface(), reflect.ValueOf(u2).FieldByName(i.Name).Interface())
 			}
 		}
+	}
+	err = s.repo.DropTable()
+	if err != nil {
+		t.Errorf("error was not expected while dropping tables: %s", err)
 	}
 
 	container.Terminate(ctx)

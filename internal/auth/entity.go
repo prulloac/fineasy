@@ -146,7 +146,6 @@ type ExternalLogin struct {
 	UserID     int       `json:"user_id" validate:"required,min=1"`
 	ProviderID int       `json:"provider_id" validate:"required,min=1"`
 	CreatedAt  time.Time `json:"created_at" validate:"required,past_time"`
-	UpdatedAt  time.Time `json:"updated_at" validate:"required,past_time"`
 }
 
 func (e *ExternalLogin) String() string {
@@ -158,14 +157,13 @@ func (e *ExternalLogin) String() string {
 }
 
 type ExternalLoginToken struct {
-	ID         int       `json:"id" validate:"required,min=1"`
-	UserID     int       `json:"user_id" validate:"required,min=1"`
-	ProviderID int       `json:"provider_id" validate:"required,min=1"`
-	LoginIP    string    `json:"login_ip" validate:"required,min=1"`
-	UserAgent  string    `json:"user_agent" validate:"required,min=1"`
-	LoggedInAt time.Time `json:"logged_in_at" validate:"required,past_time"`
-	Token      string    `json:"token" validate:"required,min=1"`
-	CreatedAt  time.Time `json:"created_at" validate:"required,past_time"`
+	ID              int       `json:"id" validate:"required,min=1"`
+	ExternalLoginID int       `json:"external_login_id" validate:"required,min=1"`
+	LoginIP         string    `json:"login_ip" validate:"required,min=1"`
+	UserAgent       string    `json:"user_agent" validate:"required,min=1"`
+	LoggedInAt      time.Time `json:"logged_in_at" validate:"required,past_time"`
+	Token           string    `json:"token" validate:"required,min=1"`
+	CreatedAt       time.Time `json:"created_at" validate:"required,past_time"`
 }
 
 func (e *ExternalLoginToken) String() string {

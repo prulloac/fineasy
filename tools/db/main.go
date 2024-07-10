@@ -6,6 +6,7 @@ import (
 
 	"github.com/prulloac/fineasy/internal/auth"
 	"github.com/prulloac/fineasy/internal/persistence"
+	"github.com/prulloac/fineasy/internal/social"
 )
 
 func main() {
@@ -33,6 +34,7 @@ type schemaOperation interface {
 func schemaUp(p *persistence.Persistence) {
 	var operations = []schemaOperation{
 		&auth.AuthRepository{DB: p.Session()},
+		&social.SocialRepository{DB: p.Session()},
 	}
 
 	for _, operation := range operations {
@@ -46,6 +48,7 @@ func schemaUp(p *persistence.Persistence) {
 func schemaDown(p *persistence.Persistence) {
 	var operations = []schemaOperation{
 		&auth.AuthRepository{DB: p.Session()},
+		&social.SocialRepository{DB: p.Session()},
 	}
 
 	for _, operation := range operations {
