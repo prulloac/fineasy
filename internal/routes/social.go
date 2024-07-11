@@ -17,8 +17,9 @@ func addSocialRoutes(rg *gin.RouterGroup) {
 	g.PATCH("/friends/requests", m.SecureRequest, updateFriendRequest)
 	// g.DELETE("/friends", m.SecureRequest, deleteFriend)
 	g.POST("/groups", m.SecureRequest, createGroup)
-	// g.GET("/groups", m.SecureRequest, getGroups)
-	// g.PATCH("/groups", m.SecureRequest, updateGroup)
+	g.GET("/groups", m.SecureRequest, getUserGroups)
+	g.PATCH("/groups", m.SecureRequest, updateGroup)
+	g.POST("/groups/membership", m.SecureRequest, updateUserGroup)
 	// g.DELETE("/groups", m.SecureRequest, dropGroup)
 }
 
@@ -117,6 +118,69 @@ func createGroup(c *gin.Context) {
 	}
 
 	out, err := s.CreateGroup(i, token.(*jwt.Token))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, out)
+}
+
+func getUserGroups(c *gin.Context) {
+	s := social.NewService()
+	token, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
+		return
+	}
+
+	out, err := s.GetUserGroups(token.(*jwt.Token))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, out)
+}
+
+func updateGroup(c *gin.Context) {
+	s := social.NewService()
+	token, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
+		return
+	}
+
+	var i social.UpdateGroupInput
+	if err := c.ShouldBindJSON(&i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	out, err := s.UpdateGroup(i, token.(*jwt.Token))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, out)
+}
+
+func updateUserGroup(c *gin.Context) {
+	s := social.NewService()
+	token, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
+		return
+	}
+
+	var i social.JoinGroupInput
+	if err := c.ShouldBindJSON(&i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	out, err := s.UpdateUserGroup(i, token.(*jwt.Token))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

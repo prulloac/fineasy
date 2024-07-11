@@ -9,7 +9,6 @@ import (
 )
 
 func TestSchemaUp(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
 
@@ -20,7 +19,6 @@ func TestSchemaUp(t *testing.T) {
 }
 
 func TestSchemaDown(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
 
@@ -31,7 +29,6 @@ func TestSchemaDown(t *testing.T) {
 }
 
 func TestSchemaReset(t *testing.T) {
-	t.Parallel()
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
 

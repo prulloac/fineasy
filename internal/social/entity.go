@@ -1,6 +1,7 @@
 package social
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -14,13 +15,13 @@ const (
 	Colleague
 	Acquaintance
 	Nakama
+	Custom1
 	Custom2
-	Custom3
 	Blocked
 )
 
 func (f FriendRelationType) String() string {
-	return [...]string{"Contact", "Family", "Colleague", "Acquaintance", "Friend", "Custom2", "Custom3", "Blocked"}[f]
+	return [...]string{"Contact", "Family", "Colleague", "Acquaintance", "Friend", "Custom1", "Custom2", "Blocked"}[f]
 }
 
 type Friend struct {
@@ -40,23 +41,25 @@ func (f *Friend) String() string {
 	return string(out)
 }
 
-type FriendRequestStatus uint8
+type SocialRequestStatus uint8
 
 const (
-	Pending FriendRequestStatus = iota
+	Pending SocialRequestStatus = iota
 	Accepted
 	Declined
+	Invited
+	Left
 )
 
-func (f FriendRequestStatus) String() string {
-	return [...]string{"Pending", "Accepted", "Declined"}[f]
+func (f SocialRequestStatus) String() string {
+	return [...]string{"Pending", "Accepted", "Declined", "Invited", "Left"}[f]
 }
 
 type FriendRequest struct {
 	ID        int                 `json:"id", validate:"required,min=1"`
 	UserID    int                 `json:"user_id", validate:"required,min=1"`
 	FriendID  int                 `json:"friend_id", validate:"required,min=1"`
-	Status    FriendRequestStatus `json:"status", validate:"required"`
+	Status    SocialRequestStatus `json:"status", validate:"required"`
 	CreatedAt time.Time           `json:"created_at", validate:"required,past_time"`
 	UpdatedAt time.Time           `json:"updated_at", validate:"required,past_time"`
 }
@@ -70,11 +73,12 @@ func (f *FriendRequest) String() string {
 }
 
 type Group struct {
-	ID        int       `json:"id", validate:"required,min=1"`
-	Name      string    `json:"name", validate:"required,min=1"`
-	CreatedBy int       `json:"created_by", validate:"required,min=1"`
-	CreatedAt time.Time `json:"created_at", validate:"required,past_time"`
-	UpdatedAt time.Time `json:"updated_at", validate:"required,past_time"`
+	ID          int       `json:"id", validate:"required,min=1"`
+	Name        string    `json:"name", validate:"required,min=1"`
+	MemberCount int       `json:"member_count", validate:"required,min=1"`
+	CreatedBy   int       `json:"created_by", validate:"required,min=1"`
+	CreatedAt   time.Time `json:"created_at", validate:"required,past_time"`
+	UpdatedAt   time.Time `json:"updated_at", validate:"required,past_time"`
 }
 
 func (g *Group) String() string {
@@ -86,11 +90,12 @@ func (g *Group) String() string {
 }
 
 type UserGroup struct {
-	ID       int       `json:"id", validate:"required,min=1"`
-	UserID   int       `json:"user_id", validate:"required,min=1"`
-	GroupID  int       `json:"group_id", validate:"required,min=1"`
-	JoinedAt time.Time `json:"joined_at", validate:"required,past_time"`
-	LeftAt   time.Time `json:"left_at", validate:"past_time"`
+	ID       int                 `json:"id", validate:"required,min=1"`
+	UserID   int                 `json:"user_id", validate:"required,min=1"`
+	GroupID  int                 `json:"group_id", validate:"required,min=1"`
+	JoinedAt time.Time           `json:"joined_at", validate:"required,past_time"`
+	LeftAt   sql.NullTime        `json:"left_at", validate:"past_time"`
+	Status   SocialRequestStatus `json:"status", validate:"required"`
 }
 
 func (ug *UserGroup) String() string {

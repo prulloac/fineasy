@@ -116,6 +116,7 @@ erDiagram
     GROUPS {
         id int
         name varchar
+        member_count int
         created_by int
         created_at datetime
         updated_at datetime
@@ -127,6 +128,7 @@ erDiagram
         group_id int
         joined_at datetime
         left_at datetime
+        status int
     }
 
     GROUPS ||--|{ USER_GROUPS : contains
