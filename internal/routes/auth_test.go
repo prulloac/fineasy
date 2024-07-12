@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/prulloac/fineasy/internal/auth"
+	"github.com/prulloac/fineasy/internal/social"
 	"github.com/prulloac/fineasy/tests"
 )
 
@@ -17,6 +18,8 @@ func TestInternalUserFlow(t *testing.T) {
 	container := tests.StartPostgresContainer(ctx, t)
 	p := auth.AuthRepository{DB: container.DB}
 	p.CreateTable()
+	s := social.SocialRepository{DB: container.DB}
+	s.CreateTable()
 	tests.LoadTestEnv()
 	handler := Run()
 	token := ""

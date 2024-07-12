@@ -1,28 +1,12 @@
 package auth
 
-import e "github.com/prulloac/fineasy/internal/errors"
-
 type RegisterInput struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-func (i RegisterInput) Validate() error {
-	if i.Email == "" || i.Password == "" || i.Username == "" {
-		return &e.ErrInvalidInput{}
-	}
-	return nil
+	Username string `json:"username",validate:"required"`
+	Email    string `json:"email",validate:"required"`
+	Password string `json:"password",validate:"required"`
 }
 
 type LoginInput struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-func (i LoginInput) Validate() error {
-	if i.Email == "" || i.Password == "" {
-		return &e.ErrInvalidInput{}
-	}
-	return nil
+	Email    string `json:"email",validate:"required"`
+	Password string `json:"password",validate:"required"`
 }

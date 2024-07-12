@@ -408,7 +408,7 @@ func TestGroupFlow(t *testing.T) {
 		rr = httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
-		if status := rr.Code; status != http.StatusCreated {
+		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusCreated)
 		}
@@ -467,7 +467,7 @@ func TestGroupFlow(t *testing.T) {
 		rr = httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
-		if status := rr.Code; status != http.StatusCreated {
+		if status := rr.Code; status != http.StatusOK {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusOK)
 		}

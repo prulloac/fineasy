@@ -11,6 +11,11 @@ type UpdateFriendRequestInput struct {
 	Status   string `json:"status", validate:"required,min=1`
 }
 
+type DeleteFriendInput struct {
+	UserID   int `json:"user_id", validate:"required,min=1`
+	FriendID int `json:"friend_id", validate:"required,min=1`
+}
+
 type CreateGroupInput struct {
 	Name string `json:"name", validate:"required,min=1`
 }

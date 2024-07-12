@@ -22,7 +22,7 @@ func SecureRequest(c *gin.Context) {
 
 	token, err := jwt.Parse(strings.TrimPrefix(tokenString, "Bearer "), func(token *jwt.Token) (interface{}, error) {
 		return loadVerifyKey(), nil
-	}, jwt.WithAudience("fineasy"), jwt.WithIssuer("fineasy"))
+	}, jwt.WithAudience("fineasy"), jwt.WithIssuer("fineasy"), jwt.WithExpirationRequired())
 	if err != nil {
 		c.AbortWithStatusJSON(401, gin.H{"error": err.Error()})
 		return

@@ -36,22 +36,23 @@ Core:
 
 | Feature | Description | Status |
 | --- | --- | --- |
-| **User Authentication** | social or email. | Not Yet ⏳ |
-| **Categories** | select categories for their trackings. | Not Yet ⏳ |
+| **Email Authentication** | Locally stored credentials. | WIP 🛠️ |
+| **Groups** | Users can create groups and add members. | WIP 🛠️ |
+| **Add Friends** | Users can add friends. | WIP 🛠️ |
 | **Multiple Personal Accounts** | Users can add multiple personal accounts. | Not Yet ⏳ |
-| **Income Tracking** | Users can add their income sources and track their income. | Not Yet ⏳ |
-| **Expense Tracking** | Users can add their expenses and track their expenses. | Not Yet ⏳ |
-| **Shared Expenses** | Users can add shared expenses and track their shared expenses. | Not Yet ⏳ |
-| **Savings Tracking** | Users can add their savings and track their savings. | Not Yet ⏳ |
+| **Personal Tracking** | Users can add personal trackings. | Not Yet ⏳ |
+| **Shared Tracking** | Users can add shared trackings. | Not Yet ⏳ |
+| **Categories** | select categories for trackings. | Not Yet ⏳ |
 | **Budgeting** | Users can set budgets for their income, expenses and savings. | Not Yet ⏳ |
+| **Revert Actions** | Users can revert their actions. | Not Yet ⏳ |
 
 Conveniences
 
 | Feature | Description | Status |
 | --- | --- | --- |
+| **Social Authentication** | Google, Facebook, Twitter, GitHub. | Not Yet ⏳ |
 | **Multiple Currencies** | Users can add their income, expenses and savings in multiple currencies. | Not Yet ⏳ |
 | **Multiple Languages** | Users can use the application in multiple languages. | Not Yet ⏳ |
-| **Revert Actions** | Users can revert their actions. | Not Yet ⏳ |
 | **Filter** | Users can filter their income, expenses and savings. | Not Yet ⏳ |
 | **Dashboard** | Users can view their income, expenses and savings in a dashboard. | Not Yet ⏳ |
 | **Reports** | Users can view reports of their income, expenses and savings. | Not Yet ⏳ |

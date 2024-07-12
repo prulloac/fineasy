@@ -26,18 +26,8 @@ func (s *Service) Close() {
 	s.persistence.Close()
 }
 
-func (s *Service) AddFriend(i AddFriendInput, t *jwt.Token) (*FriendRequestOutput, error) {
-	uid := t.Claims.(jwt.MapClaims)["uid"].(float64)
-	if int(uid) != i.UserID {
-		err := &e.ErrForbidden{}
-		log.Printf("⚠️ Error adding friend: %s", err)
-		return nil, err
-	}
-	if err := pkg.ValidateStruct(i); err != nil {
-		log.Printf("⚠️ Error adding friend: %s", err)
-		return nil, err
-	}
-	fr, err := s.repo.AddFriend(i.UserID, i.FriendID)
+func (s *Service) AddFriend(fid, uid int) (*FriendRequestOutput, error) {
+	fr, err := s.repo.AddFriend(uid, fid)
 	if err != nil {
 		return nil, err
 	}
@@ -53,9 +43,8 @@ func (s *Service) AddFriend(i AddFriendInput, t *jwt.Token) (*FriendRequestOutpu
 	return out, nil
 }
 
-func (s *Service) GetFriends(t *jwt.Token) ([]FriendShipOutput, error) {
-	uid := t.Claims.(jwt.MapClaims)["uid"].(float64)
-	fs, err := s.repo.GetFriends(int(uid))
+func (s *Service) GetFriends(uid int) ([]FriendShipOutput, error) {
+	fs, err := s.repo.GetFriends(uid)
 	if err != nil {
 		return nil, err
 	}
@@ -75,9 +64,8 @@ func (s *Service) GetFriends(t *jwt.Token) ([]FriendShipOutput, error) {
 	return out, nil
 }
 
-func (s *Service) GetFriendRequests(t *jwt.Token) ([]FriendRequestOutput, error) {
-	uid := t.Claims.(jwt.MapClaims)["uid"].(float64)
-	frs, err := s.repo.GetFriendRequests(int(uid))
+func (s *Service) GetFriendRequests(uid int) ([]FriendRequestOutput, error) {
+	frs, err := s.repo.GetFriendRequests(uid)
 	if err != nil {
 		return nil, err
 	}
@@ -97,28 +85,13 @@ func (s *Service) GetFriendRequests(t *jwt.Token) ([]FriendRequestOutput, error)
 	return out, nil
 }
 
-func (s *Service) UpdateFriendRequest(i UpdateFriendRequestInput, t *jwt.Token) (*FriendRequestOutput, error) {
-	uid := t.Claims.(jwt.MapClaims)["uid"].(float64)
-	if int(uid) != i.UserID {
-		err := &e.ErrForbidden{}
-		log.Printf("⚠️ Error updating friend request: %s", err)
-		return nil, err
-	}
-	if i.Status != "Accepted" && i.Status != "Rejected" {
-		err := &e.ErrBadRequest{}
-		log.Printf("⚠️ Error updating friend request: %s", err)
-		return nil, err
-	}
-	if err := pkg.ValidateStruct(i); err != nil {
-		log.Printf("⚠️ Error updating friend request: %s", err)
-		return nil, err
-	}
+func (s *Service) UpdateFriendRequest(fid int, status string, uid int) (*FriendRequestOutput, error) {
 	var fr *FriendRequest
 	var err error
-	if i.Status == "Accepted" {
-		fr, err = s.repo.AcceptFriendRequest(i.UserID, i.FriendID)
+	if status == "Accepted" {
+		fr, err = s.repo.AcceptFriendRequest(uid, fid)
 	} else {
-		fr, err = s.repo.RejectFriendRequest(i.UserID, i.FriendID)
+		fr, err = s.repo.RejectFriendRequest(uid, fid)
 	}
 	if err != nil {
 		return nil, err
@@ -135,13 +108,16 @@ func (s *Service) UpdateFriendRequest(i UpdateFriendRequestInput, t *jwt.Token) 
 	return out, nil
 }
 
-func (s *Service) CreateGroup(i CreateGroupInput, t *jwt.Token) (*GroupBriefOutput, error) {
-	uid := t.Claims.(jwt.MapClaims)["uid"].(float64)
-	if err := pkg.ValidateStruct(i); err != nil {
-		log.Printf("⚠️ Error creating group: %s", err)
+func (s *Service) DeleteFriend(fid, uid int) ([]FriendShipOutput, error) {
+	err := s.repo.DeleteFriend(uid, fid)
+	if err != nil {
 		return nil, err
 	}
-	g, err := s.repo.CreateGroup(i.Name, int(uid))
+	return s.GetFriends(uid)
+}
+
+func (s *Service) CreateGroup(name string, uid int) (*GroupBriefOutput, error) {
+	g, err := s.repo.CreateGroup(name, uid)
 	if err != nil {
 		return nil, err
 	}

@@ -164,6 +164,14 @@ func (s *SocialRepository) RejectFriendRequest(userID, friendID int) (*FriendReq
 	return &f, nil
 }
 
+func (s *SocialRepository) DeleteFriend(userID, friendID int) error {
+	_, err := s.DB.Exec(`
+	DELETE FROM friends
+	WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
+	`, userID, friendID)
+	return err
+}
+
 func (s *SocialRepository) CreateGroup(name string, createdBy int) (*Group, error) {
 	var g Group
 	err := s.DB.QueryRow(`

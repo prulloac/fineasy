@@ -27,14 +27,8 @@ func (s *Service) Close() {
 	s.persistence.Close()
 }
 
-func (s *Service) Login(i LoginInput, rm pkg.RequestMeta) (User, error) {
-	err := i.Validate()
-	if err != nil {
-		log.Printf("⚠️ Error logging in user: %s", err)
-		return User{}, err
-	}
-
-	uid, err := s.repo.getUserID(i.Email)
+func (s *Service) Login(mail, pwd string, rm pkg.RequestMeta) (User, error) {
+	uid, err := s.repo.getUserID(mail)
 	if err != nil {
 		log.Printf("⚠️ Error logging in user: %s", err)
 		err := &e.ErrInvalidInput{}
@@ -53,8 +47,8 @@ func (s *Service) Login(i LoginInput, rm pkg.RequestMeta) (User, error) {
 	if err != nil {
 		return User{}, fmt.Errorf("unexpected error: %w", err)
 	}
-	hashedPassword := pkg.HashPassword(i.Password, salt, algorithm.Name())
-	user, err := s.repo.getInternalLoginUser(i.Email, hashedPassword)
+	hashedPassword := pkg.HashPassword(pwd, salt, algorithm.Name())
+	user, err := s.repo.getInternalLoginUser(mail, hashedPassword)
 	if err != nil {
 		log.Printf("⚠️ Error logging in user: %s", err)
 		err := &e.ErrInvalidInput{}
@@ -65,17 +59,12 @@ func (s *Service) Login(i LoginInput, rm pkg.RequestMeta) (User, error) {
 	return user, nil
 }
 
-func (s *Service) Register(i RegisterInput, rm pkg.RequestMeta) (User, error) {
-	err := i.Validate()
-	if err != nil {
-		log.Printf("⚠️ Error registering user: %s", err)
-		return User{}, err
-	}
-	_, err = s.repo.getUserID(i.Email)
+func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (User, error) {
+	_, err := s.repo.getUserID(mail)
 	if err == sql.ErrNoRows {
 		salt := pkg.GenerateSalt()
-		hashedPassword := pkg.HashPassword(i.Password, salt, SHA256.Name())
-		user, err := s.repo.createUser(i.Username, i.Email)
+		hashedPassword := pkg.HashPassword(pwd, salt, SHA256.Name())
+		user, err := s.repo.createUser(uname, mail)
 		if err != nil {
 			log.Printf("⚠️ Error creating user: %s", err)
 			return User{}, err
@@ -96,17 +85,17 @@ func (s *Service) Register(i RegisterInput, rm pkg.RequestMeta) (User, error) {
 	return User{}, &e.ErrUserAlreadyExists{}
 }
 
-func (s *Service) Me(token *jwt.Token) (User, error) {
-	return s.GetUserFromToken(token)
-}
-
-func (s *Service) GetUserFromToken(token *jwt.Token) (User, error) {
-	userHash := token.Claims.(jwt.MapClaims)["sub"].(string)
-	user, err := s.repo.getUserByHash(userHash)
+func (s *Service) Me(uhash string) (User, error) {
+	user, err := s.repo.getUserByHash(uhash)
 	if err != nil {
 		return User{}, err
 	}
 	return user, nil
+}
+
+func (s *Service) GetUserFromToken(token *jwt.Token) (User, error) {
+	uhash := token.Claims.(jwt.MapClaims)["sub"].(string)
+	return s.Me(uhash)
 }
 
 func (s *Service) logUserSession(uid int, rm pkg.RequestMeta) error {

@@ -101,3 +101,13 @@ func (r *TransactionsRepository) DropTable() error {
 	`)
 	return err
 }
+
+func (r *TransactionsRepository) CreateAccount(name string, groupID int, currency string, createdBy int) (*Account, error) {
+	account := &Account{}
+	err := r.DB.QueryRow(`
+		INSERT INTO accounts (name, group_id, currency, balance, created_by, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		RETURNING id, name, group_id, currency, balance, created_by, created_at, updated_at
+	`, name, groupID, currency, 0.0, createdBy).Scan(&account.ID, &account.Name, &account.GroupID, &account.Currency, &account.Balance, &account.CreatedBy, &account.CreatedAt, &account.UpdatedAt)
+	return account, err
+}

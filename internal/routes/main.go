@@ -10,5 +10,6 @@ func Run() *gin.Engine {
 	addPingRoutes(v1)
 	addAuthRoutes(v1)
 	addSocialRoutes(v1)
+	addTransactionsRoutes(v1)
 	return server
 }

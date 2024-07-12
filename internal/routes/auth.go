@@ -8,6 +8,7 @@ import (
 	"github.com/prulloac/fineasy/internal/auth"
 	"github.com/prulloac/fineasy/internal/middleware"
 	m "github.com/prulloac/fineasy/internal/middleware"
+	"github.com/prulloac/fineasy/internal/social"
 	"github.com/prulloac/fineasy/pkg"
 )
 
@@ -24,11 +25,20 @@ func register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if err := pkg.ValidateStruct(i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	s := auth.NewService()
 	rm := pkg.GetRequestMeta(c.Request)
-	user, err := s.Register(i, rm)
+	user, err := s.Register(i.Username, i.Email, i.Password, rm)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	_, err = social.NewService().CreateGroup("Personal", user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	c.JSON(http.StatusCreated, user)
@@ -40,9 +50,13 @@ func login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if err := pkg.ValidateStruct(i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	s := auth.NewService()
 	rm := pkg.GetRequestMeta(c.Request)
-	user, err := s.Login(i, rm)
+	user, err := s.Login(i.Email, i.Password, rm)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -58,7 +72,8 @@ func me(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "missing token"})
 		return
 	}
-	user, err := s.Me(token.(*jwt.Token))
+	uhash := token.(*jwt.Token).Claims.(jwt.MapClaims)["sub"].(string)
+	user, err := s.Me(uhash)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
