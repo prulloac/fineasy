@@ -10,17 +10,19 @@ import (
 	"testing"
 
 	"github.com/prulloac/fineasy/internal/auth"
+	"github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/internal/social"
 	"github.com/prulloac/fineasy/tests"
 )
 
-func TestFriendshipRequestFlow(t *testing.T) {
+func TestFriendshipFlow(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
-	authRepo := auth.AuthRepository{DB: container.DB}
-	authRepo.CreateTable()
-	socialRepo := social.SocialRepository{DB: container.DB}
-	socialRepo.CreateTable()
+	per := persistence.NewPersistence()
+	authRepo := auth.NewAuthRepository(per)
+	authRepo.CreateTables()
+	socialRepo := social.NewSocialRepository(per)
+	socialRepo.CreateTables()
 	tests.LoadTestEnv()
 	handler := Run()
 	token := ""
@@ -170,13 +172,11 @@ func TestFriendshipRequestFlow(t *testing.T) {
 
 	t.Run("update friend request", func(t *testing.T) {
 		input := social.UpdateFriendRequestInput{
-			UserID:   1,
-			FriendID: 2,
-			Status:   "Accepted",
+			Status: "Accepted",
 		}
 
 		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("PATCH", "/v1/social/friends/requests", strings.NewReader(string(inputJSON)))
+		req, err = http.NewRequest("PATCH", "/v1/social/friends/requests/2", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -190,15 +190,13 @@ func TestFriendshipRequestFlow(t *testing.T) {
 				status, http.StatusOK)
 		}
 
-		expectedUserID := `"user_id":1`
-		expectedFriendID := `"friend_id":2`
 		expectedStatus := `"status":"Accepted"`
 
 		log.Printf("🔥 %v", rr.Body.String())
 
-		if !strings.Contains(rr.Body.String(), expectedUserID) || !strings.Contains(rr.Body.String(), expectedFriendID) || !strings.Contains(rr.Body.String(), expectedStatus) {
-			t.Errorf("handler returned unexpected body: got %v",
-				rr.Body.String())
+		if !strings.Contains(rr.Body.String(), expectedStatus) {
+			t.Errorf("handler returned unexpected body: got %v, want %v",
+				rr.Body.String(), expectedStatus)
 		}
 	})
 
@@ -228,15 +226,18 @@ func TestFriendshipRequestFlow(t *testing.T) {
 				rr.Body.String())
 		}
 	})
+
+	container.Terminate(ctx)
 }
 
 func TestGroupFlow(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
-	authRepo := auth.AuthRepository{DB: container.DB}
-	authRepo.CreateTable()
-	socialRepo := social.SocialRepository{DB: container.DB}
-	socialRepo.CreateTable()
+	per := persistence.NewPersistence()
+	authRepo := auth.NewAuthRepository(per)
+	authRepo.CreateTables()
+	socialRepo := social.NewSocialRepository(per)
+	socialRepo.CreateTables()
 	tests.LoadTestEnv()
 	handler := Run()
 	token := ""
@@ -360,14 +361,35 @@ func TestGroupFlow(t *testing.T) {
 		}
 	})
 
+	t.Run("get group", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/v1/social/groups/1", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		req.Header.Set("Authorization", token)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusOK)
+		}
+
+		expectedName := `"name":"Personal"`
+		if !strings.Contains(rr.Body.String(), expectedName) {
+			t.Errorf("handler returned unexpected body: got %v",
+				rr.Body.String())
+		}
+	})
+
 	t.Run("update group", func(t *testing.T) {
 		input := social.UpdateGroupInput{
-			ID:   1,
 			Name: "Updated Group",
 		}
 
 		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("PATCH", "/v1/social/groups", strings.NewReader(string(inputJSON)))
+		req, err = http.NewRequest("PATCH", "/v1/social/groups/1", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -391,7 +413,7 @@ func TestGroupFlow(t *testing.T) {
 		}
 	})
 
-	t.Run("join group", func(t *testing.T) {
+	t.Run("invite group", func(t *testing.T) {
 		input := social.JoinGroupInput{
 			GroupID: 1,
 			UserID:  2,
@@ -399,7 +421,7 @@ func TestGroupFlow(t *testing.T) {
 		}
 
 		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("POST", "/v1/social/groups/membership", strings.NewReader(string(inputJSON)))
+		req, err = http.NewRequest("POST", "/v1/social/groups/invite", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -408,7 +430,7 @@ func TestGroupFlow(t *testing.T) {
 		rr = httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
-		if status := rr.Code; status != http.StatusOK {
+		if status := rr.Code; status != http.StatusCreated {
 			t.Errorf("handler returned wrong status code: got %v want %v",
 				status, http.StatusCreated)
 		}
@@ -453,12 +475,12 @@ func TestGroupFlow(t *testing.T) {
 	t.Run("leave group", func(t *testing.T) {
 		input := social.JoinGroupInput{
 			GroupID: 1,
-			UserID:  2,
+			UserID:  1,
 			Status:  "Left",
 		}
 
 		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("POST", "/v1/social/groups/membership", strings.NewReader(string(inputJSON)))
+		req, err = http.NewRequest("PATCH", "/v1/social/groups/membership", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -483,4 +505,6 @@ func TestGroupFlow(t *testing.T) {
 				rr.Body.String())
 		}
 	})
+
+	container.Terminate(ctx)
 }

@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/prulloac/fineasy/internal/auth"
+	"github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/internal/social"
 	"github.com/prulloac/fineasy/internal/transactions"
 	"github.com/prulloac/fineasy/tests"
@@ -17,12 +18,13 @@ import (
 func TestAccountsFlow(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
-	authRepo := auth.AuthRepository{DB: container.DB}
-	authRepo.CreateTable()
-	socialRepo := social.SocialRepository{DB: container.DB}
-	socialRepo.CreateTable()
-	transRepo := transactions.TransactionsRepository{DB: container.DB}
-	transRepo.CreateTable()
+	per := persistence.NewPersistence()
+	authRepo := auth.NewAuthRepository(per)
+	authRepo.CreateTables()
+	socialRepo := social.NewSocialRepository(per)
+	socialRepo.CreateTables()
+	transRepo := transactions.NewTransactionsRepository(per)
+	transRepo.CreateTables()
 	tests.LoadTestEnv()
 	handler := Run()
 	token := ""
@@ -98,4 +100,94 @@ func TestAccountsFlow(t *testing.T) {
 		}
 	})
 
+	t.Run("get accounts", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/v1/transactions/accounts", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		req.Header.Set("Authorization", token)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusOK)
+		}
+
+		expectedNameDefault := `"name":"Personal"`
+		if !strings.Contains(rr.Body.String(), expectedNameDefault) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedNameDefault)
+		}
+		expectedName := `"name":"test account"`
+		if !strings.Contains(rr.Body.String(), expectedName) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedName)
+		}
+	})
+
+	t.Run("get account", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/v1/transactions/accounts/1", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		req.Header.Set("Authorization", token)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusOK)
+		}
+
+		expectedName := `"name":"Personal"`
+		if !strings.Contains(rr.Body.String(), expectedName) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedName)
+		}
+	})
+
+	t.Run("update account", func(t *testing.T) {
+		input := transactions.UpdateAccountInput{
+			Currency: "EUR",
+			Name:     "Current account",
+			Balance:  "1000",
+		}
+
+		inputJSON, _ := json.Marshal(input)
+		req, err := http.NewRequest("PATCH", "/v1/transactions/accounts/1", strings.NewReader(string(inputJSON)))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		req.Header.Set("Authorization", token)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusOK)
+		}
+
+		expectedCurrency := `"currency":"EUR"`
+		if !strings.Contains(rr.Body.String(), expectedCurrency) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedCurrency)
+		}
+		expectedName := `"name":"Current account"`
+		if !strings.Contains(rr.Body.String(), expectedName) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedName)
+		}
+		expectedBalance := `"balance":"1000.00"`
+		if !strings.Contains(rr.Body.String(), expectedBalance) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedBalance)
+		}
+
+	})
+
+	container.Terminate(ctx)
 }

@@ -4,29 +4,26 @@ import (
 	"log"
 	"slices"
 
-	"github.com/golang-jwt/jwt/v5"
 	e "github.com/prulloac/fineasy/internal/errors"
-	"github.com/prulloac/fineasy/internal/persistence"
+	p "github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/pkg"
 )
 
 type Service struct {
-	repo        *SocialRepository
-	persistence *persistence.Persistence
+	repo *SocialRepository
 }
 
-func NewService() *Service {
+func NewService(per *p.Persistence) *Service {
 	instance := &Service{}
-	instance.persistence = persistence.NewConnection()
-	instance.repo = NewSocialRepository(instance.persistence.Session())
+	instance.repo = NewSocialRepository(per)
 	return instance
 }
 
 func (s *Service) Close() {
-	s.persistence.Close()
+	s.repo.Close()
 }
 
-func (s *Service) AddFriend(fid, uid int) (*FriendRequestOutput, error) {
+func (s *Service) AddFriend(fid, uid uint) (*FriendRequestOutput, error) {
 	fr, err := s.repo.AddFriend(uid, fid)
 	if err != nil {
 		return nil, err
@@ -43,7 +40,7 @@ func (s *Service) AddFriend(fid, uid int) (*FriendRequestOutput, error) {
 	return out, nil
 }
 
-func (s *Service) GetFriends(uid int) ([]FriendShipOutput, error) {
+func (s *Service) GetFriends(uid uint) ([]FriendShipOutput, error) {
 	fs, err := s.repo.GetFriends(uid)
 	if err != nil {
 		return nil, err
@@ -64,7 +61,24 @@ func (s *Service) GetFriends(uid int) ([]FriendShipOutput, error) {
 	return out, nil
 }
 
-func (s *Service) GetFriendRequests(uid int) ([]FriendRequestOutput, error) {
+func (s *Service) GetFriend(fid, uid uint) (*FriendShipOutput, error) {
+	f, err := s.repo.GetFriend(fid, uid)
+	if err != nil {
+		return nil, err
+	}
+	out := &FriendShipOutput{
+		UserID:       f.UserID,
+		FriendID:     f.FriendID,
+		RelationType: f.RelationType.String(),
+	}
+	if err = pkg.ValidateStruct(out); err != nil {
+		log.Printf("⚠️ Error getting friend: %s", err)
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s *Service) GetFriendRequests(uid uint) ([]FriendRequestOutput, error) {
 	frs, err := s.repo.GetFriendRequests(uid)
 	if err != nil {
 		return nil, err
@@ -85,7 +99,7 @@ func (s *Service) GetFriendRequests(uid int) ([]FriendRequestOutput, error) {
 	return out, nil
 }
 
-func (s *Service) UpdateFriendRequest(fid int, status string, uid int) (*FriendRequestOutput, error) {
+func (s *Service) UpdateFriendRequest(status string, fid, uid uint) (*FriendRequestOutput, error) {
 	var fr *FriendRequest
 	var err error
 	if status == "Accepted" {
@@ -108,7 +122,7 @@ func (s *Service) UpdateFriendRequest(fid int, status string, uid int) (*FriendR
 	return out, nil
 }
 
-func (s *Service) DeleteFriend(fid, uid int) ([]FriendShipOutput, error) {
+func (s *Service) DeleteFriend(fid, uid uint) ([]FriendShipOutput, error) {
 	err := s.repo.DeleteFriend(uid, fid)
 	if err != nil {
 		return nil, err
@@ -116,7 +130,7 @@ func (s *Service) DeleteFriend(fid, uid int) ([]FriendShipOutput, error) {
 	return s.GetFriends(uid)
 }
 
-func (s *Service) CreateGroup(name string, uid int) (*GroupBriefOutput, error) {
+func (s *Service) CreateGroup(name string, uid uint) (*GroupBriefOutput, error) {
 	g, err := s.repo.CreateGroup(name, uid)
 	if err != nil {
 		return nil, err
@@ -134,7 +148,42 @@ func (s *Service) CreateGroup(name string, uid int) (*GroupBriefOutput, error) {
 	return out, nil
 }
 
-func (s *Service) GetGroup(id int) (*GroupBriefOutput, error) {
+func (s *Service) GetGroupByID(gid, uid uint) (*GroupFullOutput, error) {
+	g, err := s.repo.GetGroupByUserID(gid, uid)
+	if err != nil {
+		return nil, err
+	}
+	ms, err := s.repo.GetMembershipsByGroupID(gid)
+	if err != nil {
+		return nil, err
+	}
+	out := &GroupFullOutput{
+		GroupID:     g.ID,
+		Name:        g.Name,
+		MemberCount: g.MemberCount,
+		CreatedBy:   g.CreatedBy,
+		Memberships: []MembershipOutput{},
+	}
+	for _, m := range ms {
+		e := MembershipOutput{
+			UserID:   m.UserID,
+			Status:   m.Status.String(),
+			JoinedAt: m.JoinedAt.String(),
+		}
+		if err = pkg.ValidateStruct(e); err != nil {
+			log.Printf("⚠️ Error getting group by id: %s", err)
+			return nil, err
+		}
+		out.Memberships = append(out.Memberships, e)
+	}
+	if err = pkg.ValidateStruct(out); err != nil {
+		log.Printf("⚠️ Error getting group by id: %s", err)
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s *Service) GetGroup(id uint) (*GroupBriefOutput, error) {
 	g, err := s.repo.GetGroupByID(id)
 	if err != nil {
 		return nil, err
@@ -152,9 +201,8 @@ func (s *Service) GetGroup(id int) (*GroupBriefOutput, error) {
 	return out, nil
 }
 
-func (s *Service) GetUserGroups(t *jwt.Token) ([]UserGroupOutput, error) {
-	uid := t.Claims.(jwt.MapClaims)["uid"].(float64)
-	ugs, err := s.repo.GetUserGroupsByUserID(int(uid))
+func (s *Service) GetUserGroups(uid uint) ([]UserGroupOutput, error) {
+	ugs, err := s.repo.GetUserGroupsByUserID(uid)
 	if err != nil {
 		return nil, err
 	}
@@ -187,18 +235,13 @@ func (s *Service) GetUserGroups(t *jwt.Token) ([]UserGroupOutput, error) {
 	return out, nil
 }
 
-func (s *Service) UpdateGroup(i UpdateGroupInput, t *jwt.Token) (*GroupBriefOutput, error) {
-	uid := t.Claims.(jwt.MapClaims)["uid"].(float64)
-	if err := pkg.ValidateStruct(i); err != nil {
-		log.Printf("⚠️ Error updating group: %s", err)
-		return nil, err
-	}
-	groups, err := s.repo.GetGroupsByUserID(int(uid))
+func (s *Service) UpdateGroup(name string, gid, uid uint) (*GroupBriefOutput, error) {
+	groups, err := s.repo.GetGroupsByUserID(uid)
 	if err != nil {
 		return nil, err
 	}
 	userIsInGroup := slices.ContainsFunc(groups, func(g Group) bool {
-		return g.ID == i.ID
+		return g.ID == gid
 	})
 
 	if !userIsInGroup {
@@ -207,7 +250,7 @@ func (s *Service) UpdateGroup(i UpdateGroupInput, t *jwt.Token) (*GroupBriefOutp
 		return nil, err
 	}
 
-	g, err := s.repo.UpdateGroup(i.ID, i.Name)
+	g, err := s.repo.UpdateGroup(gid, name)
 	if err != nil {
 		return nil, err
 	}
@@ -224,23 +267,16 @@ func (s *Service) UpdateGroup(i UpdateGroupInput, t *jwt.Token) (*GroupBriefOutp
 	return out, nil
 }
 
-func (s *Service) UpdateUserGroup(i JoinGroupInput, t *jwt.Token) (*UserGroupOutput, error) {
-	uid := t.Claims.(jwt.MapClaims)["uid"].(float64)
-	if err := pkg.ValidateStruct(i); err != nil {
-		log.Printf("⚠️ Error joining group: %s", err)
-		return nil, err
-	}
+func (s *Service) UpdateUserGroup(status string, gid, uid uint) (*UserGroupOutput, error) {
 	var ug *UserGroup
 	var err error
-	switch i.Status {
+	switch status {
 	case "Accepted":
-		ug, err = s.repo.AcceptGroupRequest(i.GroupID, int(uid))
+		ug, err = s.repo.AcceptGroupRequest(gid, uid)
 	case "Rejected":
-		ug, err = s.repo.RejectGroupRequest(i.GroupID, int(uid))
-	case "Invited":
-		ug, err = s.repo.InviteGroupRequest(i.GroupID, i.UserID)
+		ug, err = s.repo.RejectGroupRequest(gid, uid)
 	case "Left":
-		ug, err = s.repo.LeaveGroup(i.GroupID, int(uid))
+		ug, err = s.repo.LeaveGroup(gid, uid)
 	default:
 		err := &e.ErrBadRequest{}
 		log.Printf("⚠️ Error joining group: %s", err)
@@ -265,9 +301,57 @@ func (s *Service) UpdateUserGroup(i JoinGroupInput, t *jwt.Token) (*UserGroupOut
 		Group:       g.Name,
 		JoinedAt:    ug.JoinedAt.String(),
 		LeftAt:      leftAt,
+		CreatedBy:   g.CreatedBy,
 	}
 	if err = pkg.ValidateStruct(out); err != nil {
 		log.Printf("⚠️ Error joining group: %s", err)
+		return nil, err
+	}
+	return out, nil
+}
+
+func (s *Service) InviteUserGroup(gid, uid uint) (*GroupFullOutput, error) {
+	ug, err := s.repo.InviteGroupRequest(gid, uid)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.GetGroup(ug.GroupID)
+	if err != nil {
+		return nil, err
+	}
+	return s.GetGroupFullData(ug.GroupID)
+}
+
+func (s *Service) GetGroupFullData(gid uint) (*GroupFullOutput, error) {
+	g, err := s.repo.GetGroupByID(gid)
+	if err != nil {
+		return nil, err
+	}
+	ms, err := s.repo.GetMembershipsByGroupID(gid)
+	if err != nil {
+		return nil, err
+	}
+	out := &GroupFullOutput{
+		GroupID:     g.ID,
+		Name:        g.Name,
+		MemberCount: g.MemberCount,
+		CreatedBy:   g.CreatedBy,
+		Memberships: []MembershipOutput{},
+	}
+	for _, m := range ms {
+		e := MembershipOutput{
+			UserID:   m.UserID,
+			Status:   m.Status.String(),
+			JoinedAt: m.JoinedAt.String(),
+		}
+		if err = pkg.ValidateStruct(e); err != nil {
+			log.Printf("⚠️ Error getting group full data: %s", err)
+			return nil, err
+		}
+		out.Memberships = append(out.Memberships, e)
+	}
+	if err = pkg.ValidateStruct(out); err != nil {
+		log.Printf("⚠️ Error getting group full data: %s", err)
 		return nil, err
 	}
 	return out, nil

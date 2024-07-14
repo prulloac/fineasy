@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	p := persistence.NewConnection()
+	p := persistence.NewPersistence()
 	flag.Parse()
 	defer p.Close()
 	if flag.Arg(0) == "down" {
@@ -27,18 +27,18 @@ func main() {
 }
 
 type schemaOperation interface {
-	CreateTable() error
-	DropTable() error
+	CreateTables() error
+	DropTables() error
 }
 
 func schemaUp(p *persistence.Persistence) {
 	var operations = []schemaOperation{
-		&auth.AuthRepository{DB: p.Session()},
-		&social.SocialRepository{DB: p.Session()},
+		auth.NewAuthRepository(p),
+		social.NewSocialRepository(p),
 	}
 
 	for _, operation := range operations {
-		err := operation.CreateTable()
+		err := operation.CreateTables()
 		if err != nil {
 			panic(err)
 		}
@@ -47,12 +47,12 @@ func schemaUp(p *persistence.Persistence) {
 
 func schemaDown(p *persistence.Persistence) {
 	var operations = []schemaOperation{
-		&auth.AuthRepository{DB: p.Session()},
-		&social.SocialRepository{DB: p.Session()},
+		auth.NewAuthRepository(p),
+		social.NewSocialRepository(p),
 	}
 
 	for _, operation := range operations {
-		err := operation.DropTable()
+		err := operation.DropTables()
 		if err != nil {
 			panic(err)
 		}

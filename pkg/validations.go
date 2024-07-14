@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"database/sql"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -8,8 +9,18 @@ import (
 )
 
 func PastTime(fl validator.FieldLevel) bool {
-	date := fl.Field().Interface().(time.Time)
-	return date.Before(time.Now())
+	if fl.Field().Type().String() == "time.Time" {
+		date := fl.Field().Interface().(time.Time)
+		return date.Before(time.Now())
+	}
+	if fl.Field().Type().String() == "sql.NullTime" {
+		date := fl.Field().Interface().(sql.NullTime)
+		if !date.Valid {
+			return date.Time.Before(time.Now())
+		}
+		return true
+	}
+	return false
 }
 
 func UUID7(fl validator.FieldLevel) bool {
@@ -17,10 +28,10 @@ func UUID7(fl validator.FieldLevel) bool {
 	if err != nil {
 		return false
 	}
-	if v.Version() != 7 {
-		return false
+	if v.Version() == 7 {
+		return true
 	}
-	return true
+	return false
 }
 
 func ValidateStruct(s interface{}) error {

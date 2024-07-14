@@ -12,6 +12,7 @@ import (
 )
 
 func HashPassword(password string, salt string, algorithm string) string {
+	log.Printf("🔐 Hashing password with algorithm: %s", algorithm)
 	var out string
 	switch algorithm {
 	case "SHA256":

@@ -2,29 +2,49 @@ package routes
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	m "github.com/prulloac/fineasy/internal/middleware"
+	p "github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/internal/social"
 	"github.com/prulloac/fineasy/pkg"
 )
 
-func addSocialRoutes(rg *gin.RouterGroup) {
-	g := rg.Group("/social")
-	g.POST("/friends/requests", m.SecureRequest, addFriend)
-	g.GET("/friends", m.SecureRequest, getFriends)
-	g.GET("/friends/requests", m.SecureRequest, getFriendRequests)
-	g.PATCH("/friends/requests", m.SecureRequest, updateFriendRequest)
-	g.DELETE("/friends", m.SecureRequest, deleteFriend)
-	g.POST("/groups", m.SecureRequest, createGroup)
-	g.GET("/groups", m.SecureRequest, getUserGroups)
-	g.PATCH("/groups", m.SecureRequest, updateGroup)
-	g.POST("/groups/membership", m.SecureRequest, updateUserGroup)
+type SocialController struct {
+	socialService *social.Service
 }
 
-func addFriend(c *gin.Context) {
-	s := social.NewService()
+func NewSocialController(persistence *p.Persistence) *SocialController {
+	return &SocialController{socialService: social.NewService(persistence)}
+}
+
+func (c *SocialController) Close() {
+	c.socialService.Close()
+}
+
+func (c *SocialController) RegisterPaths(rg *gin.RouterGroup) {
+	p := rg.Group("/social", m.SecureRequest)
+	// friends
+	f := p.Group("/friends")
+	f.GET("", c.getFriends)
+	f.GET(":id", c.getFriend)
+	f.DELETE(":id", c.deleteFriend)
+	f.POST("/requests", c.addFriendRequest)
+	f.GET("/requests", c.getFriendRequests)
+	f.PATCH("/requests/:id", c.updateFriendRequest)
+	// groups
+	g := p.Group("/groups")
+	g.POST("", c.createGroup)
+	g.GET("", c.getUserGroups)
+	g.GET(":id", c.getUserGroup)
+	g.PATCH(":id", c.updateGroup)
+	g.POST("/invite", c.inviteUserGroup)
+	g.PATCH("/membership", c.updateUserGroup)
+}
+
+func (s *SocialController) addFriendRequest(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -41,15 +61,15 @@ func addFriend(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if i.FriendID == int(uid) {
+	if i.FriendID == uint(uid) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot add yourself as friend"})
 		return
 	}
-	if i.UserID != int(uid) {
+	if i.UserID != uint(uid) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
-	out, err := s.AddFriend(i.FriendID, int(uid))
+	out, err := s.socialService.AddFriend(i.FriendID, uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -58,8 +78,7 @@ func addFriend(c *gin.Context) {
 	c.JSON(http.StatusCreated, out)
 }
 
-func getFriends(c *gin.Context) {
-	s := social.NewService()
+func (s *SocialController) getFriends(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -67,7 +86,7 @@ func getFriends(c *gin.Context) {
 	}
 	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
-	out, err := s.GetFriends(int(uid))
+	out, err := s.socialService.GetFriends(uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -76,16 +95,20 @@ func getFriends(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-func getFriendRequests(c *gin.Context) {
-	s := social.NewService()
+func (s *SocialController) getFriend(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
 		return
 	}
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
-	out, err := s.GetFriendRequests(int(uid))
+	out, err := s.socialService.GetFriend(uint(id), uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -94,8 +117,24 @@ func getFriendRequests(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-func updateFriendRequest(c *gin.Context) {
-	s := social.NewService()
+func (s *SocialController) getFriendRequests(c *gin.Context) {
+	token, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
+		return
+	}
+	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+
+	out, err := s.socialService.GetFriendRequests(uint(uid))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, out)
+}
+
+func (s *SocialController) updateFriendRequest(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -108,20 +147,21 @@ func updateFriendRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := pkg.ValidateStruct(i); err != nil || i.FriendID == int(uid) {
+	if err := pkg.ValidateStruct(i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if i.UserID != int(uid) {
-		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
 	if i.Status != "Accepted" && i.Status != "Rejected" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
 		return
 	}
+	fid, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
-	out, err := s.UpdateFriendRequest(i.FriendID, i.Status, int(uid))
+	out, err := s.socialService.UpdateFriendRequest(i.Status, uint(fid), uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -130,8 +170,7 @@ func updateFriendRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-func deleteFriend(c *gin.Context) {
-	s := social.NewService()
+func (s *SocialController) deleteFriend(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -144,16 +183,16 @@ func deleteFriend(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := pkg.ValidateStruct(i); err != nil || i.FriendID == int(uid) {
+	if err := pkg.ValidateStruct(i); err != nil || i.FriendID == uint(uid) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if i.UserID != int(uid) {
+	if i.UserID != uint(uid) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
 
-	out, err := s.DeleteFriend(i.FriendID, int(uid))
+	out, err := s.socialService.DeleteFriend(i.FriendID, uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -162,8 +201,7 @@ func deleteFriend(c *gin.Context) {
 	c.JSON(http.StatusAccepted, out)
 }
 
-func createGroup(c *gin.Context) {
-	s := social.NewService()
+func (s *SocialController) createGroup(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -180,7 +218,7 @@ func createGroup(c *gin.Context) {
 		return
 	}
 	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
-	out, err := s.CreateGroup(i.Name, int(uid))
+	out, err := s.socialService.CreateGroup(i.Name, uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -189,15 +227,15 @@ func createGroup(c *gin.Context) {
 	c.JSON(http.StatusCreated, out)
 }
 
-func getUserGroups(c *gin.Context) {
-	s := social.NewService()
+func (s *SocialController) getUserGroups(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
 		return
 	}
+	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
-	out, err := s.GetUserGroups(token.(*jwt.Token))
+	out, err := s.socialService.GetUserGroups(uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -206,8 +244,30 @@ func getUserGroups(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-func updateGroup(c *gin.Context) {
-	s := social.NewService()
+func (s *SocialController) getUserGroup(c *gin.Context) {
+	token, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
+		return
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	out, err := s.socialService.GetGroupByID(uint(id), uint(uid))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, out)
+}
+
+func (s *SocialController) updateGroup(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -219,8 +279,18 @@ func updateGroup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if err := pkg.ValidateStruct(i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
-	out, err := s.UpdateGroup(i, token.(*jwt.Token))
+	out, err := s.socialService.UpdateGroup(i.Name, uint(id), uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -229,8 +299,7 @@ func updateGroup(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-func updateUserGroup(c *gin.Context) {
-	s := social.NewService()
+func (s *SocialController) inviteUserGroup(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -242,8 +311,56 @@ func updateUserGroup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	if err := pkg.ValidateStruct(i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if i.Status != "Invited" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
+		return
+	}
+	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	if i.UserID == uint(uid) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot invite yourself"})
+		return
+	}
 
-	out, err := s.UpdateUserGroup(i, token.(*jwt.Token))
+	out, err := s.socialService.InviteUserGroup(i.GroupID, i.UserID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, out)
+}
+
+func (s *SocialController) updateUserGroup(c *gin.Context) {
+	token, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
+		return
+	}
+
+	var i social.JoinGroupInput
+	if err := c.ShouldBindJSON(&i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := pkg.ValidateStruct(i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if i.Status == "Invited" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
+		return
+	}
+	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	if i.UserID != uint(uid) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		return
+	}
+
+	out, err := s.socialService.UpdateUserGroup(i.Status, i.GroupID, uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

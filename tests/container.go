@@ -12,6 +12,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
+	pDriver "gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type PostgresContainer struct {
@@ -22,8 +24,7 @@ type PostgresContainer struct {
 }
 
 func StartPostgresContainer(ctx context.Context, t *testing.T) PostgresContainer {
-	container, err := postgres.RunContainer(ctx,
-		testcontainers.WithImage("postgres:alpine"),
+	container, err := postgres.Run(ctx, "postgres:alpine",
 		postgres.WithDatabase("fineasy"),
 		postgres.WithUsername("postgres"),
 		postgres.WithPassword("password"),
@@ -51,11 +52,16 @@ func StartPostgresContainer(ctx context.Context, t *testing.T) PostgresContainer
 
 	os.Setenv("DATABASE_URL", connectionString)
 
-	db, err := sql.Open("postgres", connectionString)
+	db, err := gorm.Open(pDriver.Open(connectionString), &gorm.Config{})
 
 	if err != nil {
 		t.Errorf("error was not expected while connecting to database: %s", err)
 	}
 
-	return PostgresContainer{container, connectionString, container.Terminate, db}
+	sqlDB, err := db.DB()
+	if err != nil {
+		t.Errorf("error was not expected while getting sql.DB: %s", err)
+	}
+
+	return PostgresContainer{container, connectionString, container.Terminate, sqlDB}
 }
