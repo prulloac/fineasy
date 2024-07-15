@@ -25,7 +25,7 @@ func NewAuthController(persistence *p.Persistence) *AuthController {
 	authService := auth.NewService(persistence)
 	socialService := social.NewService(persistence)
 	transactionsService := transactions.NewService(persistence)
-	authService.AddNewUserTrigger(func(u auth.User) {
+	authService.NewUserCallbacks(func(u auth.User) {
 		g, err := socialService.CreateGroup("Personal", u.ID)
 		if err != nil {
 			log.Printf("⚠️ Error creating group: %s", err)

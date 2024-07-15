@@ -12,6 +12,7 @@ import (
 	"github.com/prulloac/fineasy/internal/auth"
 	"github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/internal/social"
+	"github.com/prulloac/fineasy/internal/transactions"
 	"github.com/prulloac/fineasy/tests"
 )
 
@@ -19,10 +20,12 @@ func TestFriendshipFlow(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
 	per := persistence.NewPersistence()
-	authRepo := auth.NewAuthRepository(per)
-	authRepo.CreateTables()
-	socialRepo := social.NewSocialRepository(per)
-	socialRepo.CreateTables()
+	a := auth.NewAuthRepository(per)
+	a.CreateTables()
+	s := social.NewSocialRepository(per)
+	s.CreateTables()
+	tx := transactions.NewTransactionsRepository(per)
+	tx.CreateTables()
 	tests.LoadTestEnv()
 	handler := Run()
 	token := ""
@@ -33,60 +36,21 @@ func TestFriendshipFlow(t *testing.T) {
 		Email:    "user1@email.com",
 		Password: "password",
 	}
-	inputJSON, _ := json.Marshal(user1)
-	req, err := http.NewRequest("POST", "/v1/auth/register", strings.NewReader(string(inputJSON)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusCreated)
-	}
+	tests.RegisterUser(t, handler, user1)
 
 	user2 := auth.RegisterInput{
 		Username: "test",
 		Email:    "user2@email.com",
 		Password: "password",
 	}
-	inputJSON, _ = json.Marshal(user2)
-	req, err = http.NewRequest("POST", "/v1/auth/register", strings.NewReader(string(inputJSON)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr = httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusCreated)
-	}
+	tests.RegisterUser(t, handler, user2)
 
 	login := auth.LoginInput{
 		Email:    "user1@email.com",
 		Password: "password",
 	}
 
-	inputJSON, _ = json.Marshal(login)
-	req, err = http.NewRequest("POST", "/v1/auth/login", strings.NewReader(string(inputJSON)))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr = httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	token = rr.Header().Get("Authorization")
+	token = tests.LoginUser(t, handler, login)
 
 	t.Run("post friendship request", func(t *testing.T) {
 		input := social.AddFriendInput{
@@ -94,14 +58,14 @@ func TestFriendshipFlow(t *testing.T) {
 			FriendID: 2,
 		}
 
-		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("POST", "/v1/social/friends/requests", strings.NewReader(string(inputJSON)))
+		inputJSON, _ := json.Marshal(input)
+		req, err := http.NewRequest("POST", "/v1/social/friends/requests", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		req.Header.Set("Authorization", token)
-		rr = httptest.NewRecorder()
+		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
 		if status := rr.Code; status != http.StatusCreated {
@@ -175,14 +139,14 @@ func TestFriendshipFlow(t *testing.T) {
 			Status: "Accepted",
 		}
 
-		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("PATCH", "/v1/social/friends/requests/2", strings.NewReader(string(inputJSON)))
+		inputJSON, _ := json.Marshal(input)
+		req, err := http.NewRequest("PATCH", "/v1/social/friends/requests/2", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		req.Header.Set("Authorization", token)
-		rr = httptest.NewRecorder()
+		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
 		if status := rr.Code; status != http.StatusOK {
@@ -248,74 +212,35 @@ func TestGroupFlow(t *testing.T) {
 		Email:    "user1@email.com",
 		Password: "password",
 	}
-	inputJSON, _ := json.Marshal(user1)
-	req, err := http.NewRequest("POST", "/v1/auth/register", strings.NewReader(string(inputJSON)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusCreated)
-	}
+	tests.RegisterUser(t, handler, user1)
 
 	user2 := auth.RegisterInput{
 		Username: "test",
 		Email:    "user2@email.com",
 		Password: "password",
 	}
-	inputJSON, _ = json.Marshal(user2)
-	req, err = http.NewRequest("POST", "/v1/auth/register", strings.NewReader(string(inputJSON)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr = httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusCreated)
-	}
+	tests.RegisterUser(t, handler, user2)
 
 	login := auth.LoginInput{
 		Email:    "user1@email.com",
 		Password: "password",
 	}
 
-	inputJSON, _ = json.Marshal(login)
-	req, err = http.NewRequest("POST", "/v1/auth/login", strings.NewReader(string(inputJSON)))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr = httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	token = rr.Header().Get("Authorization")
+	token = tests.LoginUser(t, handler, login)
 
 	t.Run("create group", func(t *testing.T) {
 		input := social.CreateGroupInput{
 			Name: "Test Group",
 		}
 
-		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("POST", "/v1/social/groups", strings.NewReader(string(inputJSON)))
+		inputJSON, _ := json.Marshal(input)
+		req, err := http.NewRequest("POST", "/v1/social/groups", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		req.Header.Set("Authorization", token)
-		rr = httptest.NewRecorder()
+		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
 		if status := rr.Code; status != http.StatusCreated {
@@ -388,14 +313,14 @@ func TestGroupFlow(t *testing.T) {
 			Name: "Updated Group",
 		}
 
-		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("PATCH", "/v1/social/groups/1", strings.NewReader(string(inputJSON)))
+		inputJSON, _ := json.Marshal(input)
+		req, err := http.NewRequest("PATCH", "/v1/social/groups/1", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		req.Header.Set("Authorization", token)
-		rr = httptest.NewRecorder()
+		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
 		if status := rr.Code; status != http.StatusOK {
@@ -420,14 +345,14 @@ func TestGroupFlow(t *testing.T) {
 			Status:  "Invited",
 		}
 
-		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("POST", "/v1/social/groups/invite", strings.NewReader(string(inputJSON)))
+		inputJSON, _ := json.Marshal(input)
+		req, err := http.NewRequest("POST", "/v1/social/groups/invite", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		req.Header.Set("Authorization", token)
-		rr = httptest.NewRecorder()
+		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
 		if status := rr.Code; status != http.StatusCreated {
@@ -479,14 +404,14 @@ func TestGroupFlow(t *testing.T) {
 			Status:  "Left",
 		}
 
-		inputJSON, _ = json.Marshal(input)
-		req, err = http.NewRequest("PATCH", "/v1/social/groups/membership", strings.NewReader(string(inputJSON)))
+		inputJSON, _ := json.Marshal(input)
+		req, err := http.NewRequest("PATCH", "/v1/social/groups/membership", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		req.Header.Set("Authorization", token)
-		rr = httptest.NewRecorder()
+		rr := httptest.NewRecorder()
 		handler.ServeHTTP(rr, req)
 
 		if status := rr.Code; status != http.StatusOK {

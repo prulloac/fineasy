@@ -4,6 +4,7 @@ import (
 	"log"
 
 	p "github.com/prulloac/fineasy/internal/persistence"
+	"github.com/prulloac/fineasy/pkg"
 	"gorm.io/gorm"
 )
 
@@ -48,11 +49,11 @@ func (a *AuthRepository) getUserIDByEmail(email string) (uint, error) {
 	return uid, nil
 }
 
-func (a *AuthRepository) getSaltAndAlgorithmByUserID(uid uint) (string, Algorithm, error) {
+func (a *AuthRepository) getSaltAndAlgorithmByUserID(uid uint) (string, pkg.Algorithm, error) {
 	// salt, algorithm,
 	var sa struct {
 		PasswordSalt string
-		Algorithm    Algorithm
+		Algorithm    pkg.Algorithm
 	}
 	err := a.Persistence.ORM().Model(&InternalLogin{}).Select("password_salt", "algorithm").Where("user_id = ?", uid).Scan(&sa).Error
 	return sa.PasswordSalt, sa.Algorithm, err
@@ -73,13 +74,13 @@ func (a *AuthRepository) createUser(username string, email string) (User, error)
 	return user, err
 }
 
-func (a *AuthRepository) createInternalLogin(uid uint, hashedPassword string, salt string, algorithm Algorithm) (InternalLogin, error) {
+func (a *AuthRepository) createInternalLogin(uid uint, hashedPassword string, salt string, algorithm pkg.Algorithm) (InternalLogin, error) {
 	var il InternalLogin
 	err := a.Persistence.ORM().Create(&InternalLogin{
 		UserID:       uid,
 		Password:     hashedPassword,
 		PasswordSalt: salt,
-		Algorithm:    Algorithm(algorithm),
+		Algorithm:    pkg.Algorithm(algorithm),
 	}).Scan(&il).Error
 	return il, err
 }

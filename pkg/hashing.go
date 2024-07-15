@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
+	"encoding/base64"
 	"encoding/hex"
 	"log"
 	random "math/rand"
@@ -11,20 +12,22 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func HashPassword(password string, salt string, algorithm string) string {
+func HashPassword(password, salt string, algorithm Algorithm) string {
 	log.Printf("🔐 Hashing password with algorithm: %s", algorithm)
 	var out string
 	switch algorithm {
-	case "SHA256":
+	case SHA256:
 		out = hashWithSHA256(password, salt)
-	case "SHA512":
+	case SHA512:
 		out = hashWithSHA512(password, salt)
-	case "SHA3_256":
+	case SHA3_256:
 		out = hashWithSHA3_256(password, salt)
-	case "SHA3_512":
+	case SHA3_512:
 		out = hashWithSHA3_512(password, salt)
-	default:
-		panic("invalid algorithm")
+	case None:
+		out = password
+	case Base64:
+		out = base64.StdEncoding.EncodeToString([]byte(password + salt))
 	}
 	return out[:24] // 24 characters
 }

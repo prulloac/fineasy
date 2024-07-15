@@ -20,79 +20,36 @@ func (s *SocialRepository) Close() {
 }
 
 func (s *SocialRepository) CreateTables() error {
-	_, err := s.Persistence.SQL().Exec(`
-	CREATE TABLE IF NOT EXISTS friends (
-		id SERIAL PRIMARY KEY,
-		user_id INT NOT NULL,
-		friend_id INT NOT NULL,
-		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		relation_type INTEGER NOT NULL
-	);
-
-	CREATE TABLE IF NOT EXISTS friend_requests (
-		id SERIAL PRIMARY KEY,
-		user_id INT NOT NULL,
-		friend_id INT NOT NULL,
-		status INTEGER NOT NULL,
-		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE IF NOT EXISTS groups (
-		id SERIAL PRIMARY KEY,
-		name VARCHAR(255) NOT NULL,
-		member_count INT NOT NULL DEFAULT 0,
-		created_by INT NOT NULL,
-		created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-	);
-
-	CREATE TABLE IF NOT EXISTS user_groups (
-		id SERIAL PRIMARY KEY,
-		group_id INT NOT NULL,
-		user_id INT NOT NULL,
-		joined_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-		left_at TIMESTAMP,
-		status INTEGER NOT NULL
-	);
-	`)
-	return err
+	return s.Persistence.ORM().AutoMigrate(&Group{}, &UserGroup{}, &Friendship{})
 }
 
 func (s *SocialRepository) DropTables() error {
-	_, err := s.Persistence.SQL().Exec(`
-	DROP TABLE IF EXISTS user_groups;
-	DROP TABLE IF EXISTS groups;
-	DROP TABLE IF EXISTS friend_requests;
-	DROP TABLE IF EXISTS friends;
-	`)
-	return err
+	return s.Persistence.ORM().Migrator().DropTable(&Group{}, &UserGroup{}, &Friendship{})
 }
 
-func (s *SocialRepository) AddFriend(userID, friendID uint) (*FriendRequest, error) {
-	var f FriendRequest
-	err := s.Persistence.SQL().QueryRow(`
-	INSERT INTO friend_requests (user_id, friend_id, status)
-	VALUES ($1, $2, $3)
-	RETURNING id, user_id, friend_id, status, created_at, updated_at
-	`, userID, friendID, Pending).Scan(&f.ID, &f.UserID, &f.FriendID, &f.Status, &f.CreatedAt, &f.UpdatedAt)
+func (s *SocialRepository) CreateFriendship(userID, friendID uint) (*Friendship, error) {
+	var f Friendship
+	err := s.Persistence.ORM().Model(&Friendship{}).Create(&Friendship{
+		UserID:       userID,
+		FriendID:     friendID,
+		Status:       pkg.Pending,
+		RelationType: pkg.Contact,
+	}).Scan(&f).Error
 	if err != nil {
 		return nil, err
 	}
 	return &f, nil
 }
 
-func (s *SocialRepository) GetFriends(userID uint) ([]Friend, error) {
-	friends := []Friend{}
-
-	rows, err := s.Persistence.ORM().Debug().
-		Table("friends").Find(&friends).Where("user_id = ?", userID).Or("friend_id = ?", userID).Rows()
+func (s *SocialRepository) GetFriendshipsByUserID(userID uint) ([]Friendship, error) {
+	friends := []Friendship{}
+	rows, err := s.Persistence.ORM().Model(&Friendship{}).
+		Where("(user_id = ? OR friend_id = ?) AND status = ?", userID, userID, pkg.Accepted).
+		Find(&friends).Rows()
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-
 	for _, f := range friends {
 		if err = pkg.ValidateStruct(f); err != nil {
 			return nil, err
@@ -101,22 +58,18 @@ func (s *SocialRepository) GetFriends(userID uint) ([]Friend, error) {
 	return friends, nil
 }
 
-func (s *SocialRepository) GetFriend(fid, uid uint) (*Friend, error) {
-	var f Friend
-	err := s.Persistence.SQL().QueryRow(`
-	SELECT user_id, friend_id, relation_type
-	FROM friends
-	WHERE user_id = $1 AND friend_id = $2
-	`, uid, fid).Scan(&f.UserID, &f.FriendID, &f.RelationType)
+func (s *SocialRepository) GetFriendshipByFriendIDAndUserID(fid, uid uint) (*Friendship, error) {
+	var f Friendship
+	err := s.Persistence.ORM().Model(&Friendship{}).Where("(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", uid, fid, fid, uid).First(&f).Error
 	if err != nil {
 		return nil, err
 	}
 	return &f, nil
 }
 
-func (s *SocialRepository) GetFriendRequests(userID uint) ([]FriendRequest, error) {
-	requests := []FriendRequest{}
-	rows, err := s.Persistence.ORM().Debug().Table("friend_requests").Find(&requests, "user_id = ?", userID).Rows()
+func (s *SocialRepository) GetPendingFriendshipsByUserID(userID uint) ([]Friendship, error) {
+	requests := []Friendship{}
+	rows, err := s.Persistence.ORM().Debug().Model(&Friendship{}).Find(&requests, "(user_id = ? OR friend_id = ?) AND status = ?", userID, userID, pkg.Pending).Rows()
 	if err != nil {
 		return nil, err
 	}
@@ -130,88 +83,41 @@ func (s *SocialRepository) GetFriendRequests(userID uint) ([]FriendRequest, erro
 	return requests, nil
 }
 
-func (s *SocialRepository) AcceptFriendRequest(userID, friendID uint) (*FriendRequest, error) {
-	var f FriendRequest
-	err := s.Persistence.SQL().QueryRow(`
-	UPDATE friend_requests
-	SET status = $3
-	WHERE user_id = $1 AND friend_id = $2
-	RETURNING id, user_id, friend_id, status, created_at, updated_at
-	`, userID, friendID, Accepted).Scan(&f.ID, &f.UserID, &f.FriendID, &f.Status, &f.CreatedAt, &f.UpdatedAt)
+func (s *SocialRepository) AcceptFriendship(userID, friendID uint) (*Friendship, error) {
+	f := []Friendship{}
+	err := s.Persistence.ORM().Model(&Friendship{}).Debug().
+		Where("user_id = ? AND friend_id = ?", userID, friendID).
+		Or("user_id = ? AND friend_id = ?", friendID, userID).
+		Find(&f).Error
 	if err != nil {
 		return nil, err
 	}
-	// both users are now friends
-	_, err = s.Persistence.SQL().Exec(`
-	INSERT INTO friends (user_id, friend_id, relation_type)
-	VALUES ($1, $2, $3)
-	`, userID, friendID, Contact)
-	if err != nil {
-		return nil, err
+	for _, r := range f {
+		err = s.Persistence.ORM().Model(&Friendship{}).Where("id = ?", r.ID).Update("status", pkg.Accepted).Error
+		if err != nil {
+			return nil, err
+		}
 	}
-	_, err = s.Persistence.SQL().Exec(`
-	INSERT INTO friends (user_id, friend_id, relation_type)
-	VALUES ($1, $2, $3)
-	`, friendID, userID, Contact)
-	if err != nil {
-		return nil, err
-	}
-	return &f, nil
+	return s.GetFriendshipByFriendIDAndUserID(friendID, userID)
 }
 
-func (s *SocialRepository) RejectFriendRequest(userID, friendID uint) (*FriendRequest, error) {
-	var f FriendRequest
-	err := s.Persistence.SQL().QueryRow(`
-	UPDATE friend_requests
-	SET status = $3
-	WHERE user_id = $1 AND friend_id = $2
-	RETURNING id, user_id, friend_id, status, created_at, updated_at
-	`, userID, friendID, Declined).Scan(&f.ID, &f.UserID, &f.FriendID, &f.Status, &f.CreatedAt, &f.UpdatedAt)
-	if err != nil {
-		return nil, err
-	}
-	return &f, nil
-}
-
-func (s *SocialRepository) DeleteFriend(userID, friendID uint) error {
-	// Delete friendship from friends table
-	_, err := s.Persistence.SQL().Exec(`
-	DELETE FROM friends
-	WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
-	`, userID, friendID)
-	if err != nil {
-		return err
-	}
-	_, err = s.Persistence.SQL().Exec(`
-	DELETE FROM friends
-	WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
-	`, friendID, userID)
-	if err != nil {
-		return err
-	}
-	// Delete friend request from friend_requests table
-	_, err = s.Persistence.SQL().Exec(`
-	DELETE FROM friend_requests
-	WHERE (user_id = $1 AND friend_id = $2) OR (user_id = $2 AND friend_id = $1)
-	`, userID, friendID)
-	if err != nil {
-		return err
-	}
-	return nil
+func (s *SocialRepository) RejectFriendship(userID, friendID uint) error {
+	err := s.Persistence.ORM().Model(&Friendship{}).Delete(&Friendship{}, "(user_id = ? AND friend_id = ?) OR (user_id = ? AND friend_id = ?)", userID, friendID, friendID, userID).Error
+	return err
 }
 
 func (s *SocialRepository) CreateGroup(name string, createdBy uint) (*Group, error) {
 	var g Group
-	err := s.Persistence.SQL().QueryRow(`
-	INSERT INTO groups (name, created_by)
-	VALUES ($1, $2)
-	RETURNING id, name, created_by, created_at, updated_at
-	`, name, createdBy).Scan(&g.ID, &g.Name, &g.CreatedBy, &g.CreatedAt, &g.UpdatedAt)
+	err := s.Persistence.ORM().Model(&Group{}).Create(&Group{
+		Name:      name,
+		CreatedBy: createdBy,
+	}).Scan(&g).Error
 	if err != nil {
 		return nil, err
 	}
+	s.Persistence.ORM().Model(&Group{}).Save(&g)
 	// Add members to user_groups table
-	_, err = s.InsertUserGroup(createdBy, g.ID, Accepted)
+	_, err = s.InsertUserGroup(createdBy, g.ID, pkg.Accepted)
 	if err != nil {
 		return nil, err
 	}
@@ -283,13 +189,14 @@ func (s *SocialRepository) UpdateGroup(groupID uint, name string) (*Group, error
 	return &g, nil
 }
 
-func (s *SocialRepository) InsertUserGroup(userID, groupID uint, status SocialRequestStatus) (*UserGroup, error) {
+func (s *SocialRepository) InsertUserGroup(userID, groupID uint, status pkg.SocialRequestStatus) (*UserGroup, error) {
 	var ug UserGroup
-	err := s.Persistence.SQL().QueryRow(`
-	INSERT INTO user_groups (group_id, user_id, status)
-	VALUES ($1, $2, $3)
-	RETURNING id, user_id, group_id, joined_at, left_at, status
-	`, groupID, userID, status).Scan(&ug.ID, &ug.UserID, &ug.GroupID, &ug.JoinedAt, &ug.LeftAt, &ug.Status)
+	err := s.Persistence.ORM().Model(&UserGroup{}).Create(&UserGroup{
+		UserID:  userID,
+		GroupID: groupID,
+		Status:  status,
+	}).Scan(&ug).Error
+	s.Persistence.ORM().Model(&UserGroup{}).Save(&ug)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +241,7 @@ func (s *SocialRepository) GetUserGroupsByUserID(userID uint) ([]UserGroup, erro
 	return userGroups, nil
 }
 
-func (s *SocialRepository) UpdateUserGroup(userID, groupID uint, status SocialRequestStatus) (*UserGroup, error) {
+func (s *SocialRepository) UpdateUserGroup(userID, groupID uint, status pkg.SocialRequestStatus) (*UserGroup, error) {
 	var ug UserGroup
 	err := s.Persistence.ORM().Table("user_groups").Where("user_id = ? AND group_id = ?", userID, groupID).First(&ug).Error
 	if err != nil {
@@ -349,19 +256,19 @@ func (s *SocialRepository) UpdateUserGroup(userID, groupID uint, status SocialRe
 }
 
 func (s *SocialRepository) LeaveGroup(groupID, userID uint) (*UserGroup, error) {
-	return s.UpdateUserGroup(userID, groupID, Left)
+	return s.UpdateUserGroup(userID, groupID, pkg.Left)
 }
 
 func (s *SocialRepository) InviteGroupRequest(groupID, userID uint) (*UserGroup, error) {
-	return s.InsertUserGroup(userID, groupID, Invited)
+	return s.InsertUserGroup(userID, groupID, pkg.Invited)
 }
 
 func (s *SocialRepository) AcceptGroupRequest(groupID, userID uint) (*UserGroup, error) {
-	return s.UpdateUserGroup(userID, groupID, Accepted)
+	return s.UpdateUserGroup(userID, groupID, pkg.Accepted)
 }
 
 func (s *SocialRepository) RejectGroupRequest(groupID, userID uint) (*UserGroup, error) {
-	return s.UpdateUserGroup(userID, groupID, Declined)
+	return s.UpdateUserGroup(userID, groupID, pkg.Declined)
 }
 
 func (s *SocialRepository) GetMembershipsByGroupID(groupID uint) ([]UserGroup, error) {

@@ -23,8 +23,8 @@ func (s *Service) Close() {
 	s.repo.Close()
 }
 
-func (s *Service) AddFriend(fid, uid uint) (*FriendRequestOutput, error) {
-	fr, err := s.repo.AddFriend(uid, fid)
+func (s *Service) AddFriendship(fid, uid uint) (*FriendRequestOutput, error) {
+	fr, err := s.repo.CreateFriendship(uid, fid)
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +40,8 @@ func (s *Service) AddFriend(fid, uid uint) (*FriendRequestOutput, error) {
 	return out, nil
 }
 
-func (s *Service) GetFriends(uid uint) ([]FriendShipOutput, error) {
-	fs, err := s.repo.GetFriends(uid)
+func (s *Service) GetFriendships(uid uint) ([]FriendShipOutput, error) {
+	fs, err := s.repo.GetFriendshipsByUserID(uid)
 	if err != nil {
 		return nil, err
 	}
@@ -61,8 +61,8 @@ func (s *Service) GetFriends(uid uint) ([]FriendShipOutput, error) {
 	return out, nil
 }
 
-func (s *Service) GetFriend(fid, uid uint) (*FriendShipOutput, error) {
-	f, err := s.repo.GetFriend(fid, uid)
+func (s *Service) GetFriendship(fid, uid uint) (*FriendShipOutput, error) {
+	f, err := s.repo.GetFriendshipByFriendIDAndUserID(fid, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -78,8 +78,8 @@ func (s *Service) GetFriend(fid, uid uint) (*FriendShipOutput, error) {
 	return out, nil
 }
 
-func (s *Service) GetFriendRequests(uid uint) ([]FriendRequestOutput, error) {
-	frs, err := s.repo.GetFriendRequests(uid)
+func (s *Service) GetPendingFriendships(uid uint) ([]FriendRequestOutput, error) {
+	frs, err := s.repo.GetPendingFriendshipsByUserID(uid)
 	if err != nil {
 		return nil, err
 	}
@@ -99,13 +99,11 @@ func (s *Service) GetFriendRequests(uid uint) ([]FriendRequestOutput, error) {
 	return out, nil
 }
 
-func (s *Service) UpdateFriendRequest(status string, fid, uid uint) (*FriendRequestOutput, error) {
-	var fr *FriendRequest
+func (s *Service) AcceptFriendship(status string, fid, uid uint) (*FriendRequestOutput, error) {
+	var fr *Friendship
 	var err error
 	if status == "Accepted" {
-		fr, err = s.repo.AcceptFriendRequest(uid, fid)
-	} else {
-		fr, err = s.repo.RejectFriendRequest(uid, fid)
+		fr, err = s.repo.AcceptFriendship(uid, fid)
 	}
 	if err != nil {
 		return nil, err
@@ -122,12 +120,12 @@ func (s *Service) UpdateFriendRequest(status string, fid, uid uint) (*FriendRequ
 	return out, nil
 }
 
-func (s *Service) DeleteFriend(fid, uid uint) ([]FriendShipOutput, error) {
-	err := s.repo.DeleteFriend(uid, fid)
+func (s *Service) RejectFriendship(fid, uid uint) ([]FriendShipOutput, error) {
+	err := s.repo.RejectFriendship(uid, fid)
 	if err != nil {
 		return nil, err
 	}
-	return s.GetFriends(uid)
+	return s.GetFriendships(uid)
 }
 
 func (s *Service) CreateGroup(name string, uid uint) (*GroupBriefOutput, error) {

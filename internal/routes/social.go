@@ -28,12 +28,12 @@ func (c *SocialController) RegisterPaths(rg *gin.RouterGroup) {
 	p := rg.Group("/social", m.SecureRequest)
 	// friends
 	f := p.Group("/friends")
-	f.GET("", c.getFriends)
-	f.GET(":id", c.getFriend)
-	f.DELETE(":id", c.deleteFriend)
-	f.POST("/requests", c.addFriendRequest)
-	f.GET("/requests", c.getFriendRequests)
-	f.PATCH("/requests/:id", c.updateFriendRequest)
+	f.GET("", c.getFriendships)
+	f.GET(":id", c.getFriendhip)
+	f.DELETE(":id", c.deleteFriendship)
+	f.POST("/requests", c.addFriendship)
+	f.GET("/requests", c.getPendingFriendships)
+	f.PATCH("/requests/:id", c.acceptFriendship)
 	// groups
 	g := p.Group("/groups")
 	g.POST("", c.createGroup)
@@ -44,7 +44,7 @@ func (c *SocialController) RegisterPaths(rg *gin.RouterGroup) {
 	g.PATCH("/membership", c.updateUserGroup)
 }
 
-func (s *SocialController) addFriendRequest(c *gin.Context) {
+func (s *SocialController) addFriendship(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -69,7 +69,7 @@ func (s *SocialController) addFriendRequest(c *gin.Context) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return
 	}
-	out, err := s.socialService.AddFriend(i.FriendID, uint(uid))
+	out, err := s.socialService.AddFriendship(i.FriendID, uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -78,7 +78,7 @@ func (s *SocialController) addFriendRequest(c *gin.Context) {
 	c.JSON(http.StatusCreated, out)
 }
 
-func (s *SocialController) getFriends(c *gin.Context) {
+func (s *SocialController) getFriendships(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -86,7 +86,7 @@ func (s *SocialController) getFriends(c *gin.Context) {
 	}
 	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
-	out, err := s.socialService.GetFriends(uint(uid))
+	out, err := s.socialService.GetFriendships(uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -95,7 +95,7 @@ func (s *SocialController) getFriends(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-func (s *SocialController) getFriend(c *gin.Context) {
+func (s *SocialController) getFriendhip(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -108,7 +108,7 @@ func (s *SocialController) getFriend(c *gin.Context) {
 	}
 	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
-	out, err := s.socialService.GetFriend(uint(id), uint(uid))
+	out, err := s.socialService.GetFriendship(uint(id), uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -117,7 +117,7 @@ func (s *SocialController) getFriend(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-func (s *SocialController) getFriendRequests(c *gin.Context) {
+func (s *SocialController) getPendingFriendships(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -125,7 +125,7 @@ func (s *SocialController) getFriendRequests(c *gin.Context) {
 	}
 	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
-	out, err := s.socialService.GetFriendRequests(uint(uid))
+	out, err := s.socialService.GetPendingFriendships(uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -134,7 +134,7 @@ func (s *SocialController) getFriendRequests(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-func (s *SocialController) updateFriendRequest(c *gin.Context) {
+func (s *SocialController) acceptFriendship(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -151,7 +151,7 @@ func (s *SocialController) updateFriendRequest(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if i.Status != "Accepted" && i.Status != "Rejected" {
+	if i.Status != "Accepted" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
 		return
 	}
@@ -161,7 +161,7 @@ func (s *SocialController) updateFriendRequest(c *gin.Context) {
 		return
 	}
 
-	out, err := s.socialService.UpdateFriendRequest(i.Status, uint(fid), uint(uid))
+	out, err := s.socialService.AcceptFriendship(i.Status, uint(fid), uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -170,7 +170,7 @@ func (s *SocialController) updateFriendRequest(c *gin.Context) {
 	c.JSON(http.StatusOK, out)
 }
 
-func (s *SocialController) deleteFriend(c *gin.Context) {
+func (s *SocialController) deleteFriendship(c *gin.Context) {
 	token, exists := c.Get("token")
 	if !exists {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
@@ -192,7 +192,7 @@ func (s *SocialController) deleteFriend(c *gin.Context) {
 		return
 	}
 
-	out, err := s.socialService.DeleteFriend(i.FriendID, uint(uid))
+	out, err := s.socialService.RejectFriendship(i.FriendID, uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

@@ -160,7 +160,6 @@ erDiagram
         id int
         name varchar
         account_id int
-        currency_id int
         amount float
         created_by int
         start_date date
@@ -197,9 +196,16 @@ erDiagram
         updated_at datetime
     }
 
+    c1[CURRENCIES]
+    c2[CURRENCIES]
+
     ACCOUNTS ||--|{ BUDGETS : contains
     CATEGORIES ||--o{ TRANSACTIONS : contains
     BUDGETS ||--o{ TRANSACTIONS : contains
+    USERS ||--|{ TRANSACTIONS : contains
+    GROUPS ||--|{ ACCOUNTS : contains
+    c1 ||--|{ ACCOUNTS : contains
+    c2 ||--|{ TRANSACTIONS : contains
 
 ```
 

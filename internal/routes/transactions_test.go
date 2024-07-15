@@ -35,41 +35,14 @@ func TestAccountsFlow(t *testing.T) {
 		Email:    "user@email.com",
 		Password: "password",
 	}
-	inputJSON, _ := json.Marshal(user)
-	req, err := http.NewRequest("POST", "/v1/auth/register", strings.NewReader(string(inputJSON)))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr := httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusCreated {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusCreated)
-	}
+	tests.RegisterUser(t, handler, user)
 
 	login := auth.LoginInput{
 		Email:    user.Email,
 		Password: user.Password,
 	}
 
-	inputJSON, _ = json.Marshal(login)
-	req, err = http.NewRequest("POST", "/v1/auth/login", strings.NewReader(string(inputJSON)))
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	rr = httptest.NewRecorder()
-	handler.ServeHTTP(rr, req)
-
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
-	}
-
-	token = rr.Header().Get("Authorization")
+	token = tests.LoginUser(t, handler, login)
 
 	t.Run("create account", func(t *testing.T) {
 		input := transactions.CreateAccountInput{

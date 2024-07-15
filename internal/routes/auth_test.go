@@ -11,6 +11,7 @@ import (
 	"github.com/prulloac/fineasy/internal/auth"
 	"github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/internal/social"
+	"github.com/prulloac/fineasy/internal/transactions"
 	"github.com/prulloac/fineasy/tests"
 )
 
@@ -22,6 +23,8 @@ func TestInternalUserFlow(t *testing.T) {
 	p.CreateTables()
 	s := social.NewSocialRepository(per)
 	s.CreateTables()
+	tx := transactions.NewTransactionsRepository(per)
+	tx.CreateTables()
 	tests.LoadTestEnv()
 	handler := Run()
 	token := ""

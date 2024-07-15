@@ -18,7 +18,6 @@ func SecureRequest(c *gin.Context) {
 		c.AbortWithStatusJSON(401, gin.H{"error": "missing Authorization header"})
 		return
 	}
-	log.Printf("🔐 Token: %s", tokenString)
 
 	token, err := jwt.Parse(strings.TrimPrefix(tokenString, "Bearer "), func(token *jwt.Token) (interface{}, error) {
 		return loadVerifyKey(), nil

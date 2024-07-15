@@ -43,55 +43,16 @@ func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
 	return nil
 }
 
-type Algorithm uint16
-
-const (
-	None Algorithm = iota
-	SHA256
-	SHA512
-	SHA3_256
-	SHA3_512
-	Base64
-)
-
-func (a Algorithm) String() string {
-	return [...]string{"None", "SHA256", "SHA512", "SHA3_256", "SHA3_512", "Base64"}[a]
-}
-
-type TokenTypes uint16
-
-const (
-	AccessToken TokenTypes = iota
-	RefreshToken
-	PasswordResetToken
-	EmailVerificationToken
-)
-
-func (t TokenTypes) Name() string {
-	switch t {
-	case AccessToken:
-		return "AccessToken"
-	case RefreshToken:
-		return "RefreshToken"
-	case PasswordResetToken:
-		return "PasswordResetToken"
-	case EmailVerificationToken:
-		return "EmailVerificationToken"
-	default:
-		panic("invalid token type")
-	}
-}
-
 type InternalLogin struct {
 	gorm.Model
-	UserID                uint      `json:"user_id" validate:"required,min=1"`
-	Password              string    `json:"password" validate:"required,min=1"`
-	PasswordSalt          string    `json:"password_salt" validate:"required"`
-	Algorithm             Algorithm `json:"algorithm" validate:"required,min=0"`
-	PasswordLastUpdatedAt time.Time `json:"password_last_updated_at" validate:"required,past_time"`
-	LoginAttempts         int       `json:"login_attempts" validate:"required,min=1"`
-	LastLoginAttempt      time.Time `json:"last_login_attempt" validate:"required,past_time"`
-	LastLoginSuccess      time.Time `json:"last_login_success" validate:"required,past_time"`
+	UserID                uint          `json:"user_id" validate:"required,min=1"`
+	Password              string        `json:"password" validate:"required,min=1"`
+	PasswordSalt          string        `json:"password_salt" validate:"required"`
+	Algorithm             pkg.Algorithm `json:"algorithm" validate:"required,min=0"`
+	PasswordLastUpdatedAt time.Time     `json:"password_last_updated_at" validate:"required,past_time"`
+	LoginAttempts         int           `json:"login_attempts" validate:"required,min=1"`
+	LastLoginAttempt      time.Time     `json:"last_login_attempt" validate:"required,past_time"`
+	LastLoginSuccess      time.Time     `json:"last_login_success" validate:"required,past_time"`
 }
 
 func (i *InternalLogin) String() string {
@@ -103,13 +64,13 @@ func (i *InternalLogin) String() string {
 }
 
 type LoginToken struct {
-	ID        int       `json:"id" validate:"required,min=1"`
-	UserID    int       `json:"user_id" validate:"required,min=1"`
-	Token     string    `json:"token" validate:"required,min=1"`
-	TokenType int       `json:"token_type" validate:"required,min=1"`
-	ExpiresAt time.Time `json:"expires_at" validate:"required,past_time"`
-	UsedAt    time.Time `json:"used_at" validate:"required,past_time"`
-	CreatedAt time.Time `json:"created_at" validate:"required,past_time"`
+	ID        int           `json:"id" validate:"required,min=1"`
+	UserID    int           `json:"user_id" validate:"required,min=1"`
+	Token     string        `json:"token" validate:"required,min=1"`
+	TokenType pkg.TokenType `json:"token_type" validate:"required,min=1"`
+	ExpiresAt time.Time     `json:"expires_at" validate:"required,past_time"`
+	UsedAt    time.Time     `json:"used_at" validate:"required,past_time"`
+	CreatedAt time.Time     `json:"created_at" validate:"required,past_time"`
 }
 
 func (l *LoginToken) String() string {

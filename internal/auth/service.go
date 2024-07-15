@@ -11,9 +11,11 @@ import (
 	"gorm.io/gorm"
 )
 
+type NewUserCallback func(User)
+
 type Service struct {
-	repo            *AuthRepository
-	newUserTriggers []func(User)
+	repo             *AuthRepository
+	newUserCallbacks []NewUserCallback
 }
 
 func NewService(per *p.Persistence) *Service {
@@ -30,13 +32,13 @@ func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (User, e
 	_, err := s.repo.getUserIDByEmail(mail)
 	if err == gorm.ErrRecordNotFound {
 		salt := pkg.GenerateSalt()
-		hashedPassword := pkg.HashPassword(pwd, salt, SHA256.String())
+		hashedPassword := pkg.HashPassword(pwd, salt, pkg.SHA256)
 		user, err := s.repo.createUser(uname, mail)
 		if err != nil {
 			log.Printf("⚠️ Error creating user: %s", err)
 			return User{}, err
 		}
-		il, err := s.repo.createInternalLogin(user.ID, hashedPassword, salt, SHA256)
+		il, err := s.repo.createInternalLogin(user.ID, hashedPassword, salt, pkg.SHA256)
 		if err != nil {
 			log.Printf("⚠️ Error creating internal user: %s", err)
 			return User{}, err
@@ -45,7 +47,7 @@ func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (User, e
 		log.Printf("✅ User %v created successfully", user.ID)
 		s.logUserSession(user.ID, rm)
 
-		for _, f := range s.newUserTriggers {
+		for _, f := range s.newUserCallbacks {
 			f(user)
 		}
 
@@ -78,7 +80,7 @@ func (s *Service) Login(mail, pwd string, rm pkg.RequestMeta) (User, error) {
 	if err != nil {
 		return User{}, fmt.Errorf("unexpected error: %w", err)
 	}
-	hashedPassword := pkg.HashPassword(pwd, salt, algorithm.String())
+	hashedPassword := pkg.HashPassword(pwd, salt, algorithm)
 	user, err := s.repo.getInternalLoginUserByEmailAndPassword(mail, hashedPassword)
 	if err != nil {
 		log.Printf("⚠️ Error logging in user: %s", err)
@@ -106,7 +108,7 @@ func (s *Service) logUserSession(uid uint, rm pkg.RequestMeta) error {
 	return s.repo.logUserSession(uid, rm.Ip, rm.Agent)
 }
 
-func (s *Service) AddNewUserTrigger(f func(User)) *Service {
-	s.newUserTriggers = append(s.newUserTriggers, f)
+func (s *Service) NewUserCallbacks(f ...NewUserCallback) *Service {
+	s.newUserCallbacks = append(s.newUserCallbacks, f...)
 	return s
 }
