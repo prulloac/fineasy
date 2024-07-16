@@ -6,61 +6,42 @@ import (
 	"os"
 
 	godotenv "github.com/joho/godotenv"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 
 	_ "github.com/lib/pq"
 )
 
 type Persistence struct {
-	gdb *gorm.DB
+	db *sql.DB
 }
 
+var logger = log.New(os.Stdout, "[Persistence] ", log.LUTC)
+
 func NewPersistence() *Persistence {
-	err := godotenv.Load()
-
-	if err != nil {
-		log.Println("Error loading .env file")
-	}
-
-	db, err := gorm.Open(postgres.Open(os.Getenv("DATABASE_URL")), &gorm.Config{})
+	godotenv.Load()
+	dsn := os.Getenv("DATABASE_URL")
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		panic(err)
 	}
 
-	sql, err := db.DB()
-	if err != nil {
-		panic(err)
-	}
-	err = sql.Ping()
-	if err != nil {
+	if err = db.Ping(); err != nil {
 		panic(err)
 	}
 
-	log.Println("Database Successfully connected!")
+	logger.Println("Database Successfully connected!")
 
-	instance := &Persistence{}
-	instance.gdb = db
+	instance := &Persistence{db}
 	return instance
 }
 
 func (p *Persistence) Close() {
-	sql, err := p.gdb.DB()
+	err := p.db.Close()
 	if err != nil {
 		panic(err)
 	}
-	err = sql.Close()
-	log.Println("Database Successfully disconnected!")
-}
-
-func (p *Persistence) ORM() *gorm.DB {
-	return p.gdb
+	logger.Println("Database Successfully disconnected!")
 }
 
 func (p *Persistence) SQL() *sql.DB {
-	sql, err := p.gdb.DB()
-	if err != nil {
-		panic(err)
-	}
-	return sql
+	return p.db
 }

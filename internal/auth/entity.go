@@ -6,13 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/prulloac/fineasy/pkg"
-	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
+	pkg.Model
 	Hash              string        `json:"hash" validate:"required,uuid7"`
 	Username          string        `json:"username" validate:"required,min=1"`
 	Email             string        `json:"email" validate:"required,email"`
@@ -30,21 +28,8 @@ func (u *User) String() string {
 	return string(out)
 }
 
-func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
-	uhash, err := uuid.NewV7()
-	if err != nil {
-		return err
-	}
-	u.Hash = uhash.String()
-	err = pkg.ValidateStruct(u)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 type InternalLogin struct {
-	gorm.Model
+	pkg.Model
 	UserID                uint          `json:"user_id" validate:"required,min=1"`
 	Password              string        `json:"password" validate:"required,min=1"`
 	PasswordSalt          string        `json:"password_salt" validate:"required"`
@@ -133,7 +118,7 @@ func (e *ExternalLoginToken) String() string {
 }
 
 type UserSession struct {
-	gorm.Model
+	pkg.Model
 	UserID      uint      `json:"user_id" validate:"required,min=1"`
 	LoginIP     string    `json:"login_ip" validate:"required,min=1"`
 	UserAgent   string    `json:"user_agent" validate:"required,min=1"`

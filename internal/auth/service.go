@@ -1,14 +1,15 @@
 package auth
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/golang-jwt/jwt/v5"
 	e "github.com/prulloac/fineasy/internal/errors"
 	p "github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/pkg"
-	"gorm.io/gorm"
 )
 
 type NewUserCallback func(User)
@@ -16,11 +17,13 @@ type NewUserCallback func(User)
 type Service struct {
 	repo             *AuthRepository
 	newUserCallbacks []NewUserCallback
+	logger           *log.Logger
 }
 
 func NewService(per *p.Persistence) *Service {
 	instance := &Service{}
 	instance.repo = NewAuthRepository(per)
+	instance.logger = log.New(os.Stdout, "[AuthService] ", log.LUTC)
 	return instance
 }
 
@@ -30,21 +33,21 @@ func (s *Service) Close() {
 
 func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (User, error) {
 	_, err := s.repo.getUserIDByEmail(mail)
-	if err == gorm.ErrRecordNotFound {
+	if err == sql.ErrNoRows {
 		salt := pkg.GenerateSalt()
 		hashedPassword := pkg.HashPassword(pwd, salt, pkg.SHA256)
 		user, err := s.repo.createUser(uname, mail)
 		if err != nil {
-			log.Printf("⚠️ Error creating user: %s", err)
+			s.logger.Printf("⚠️ Error creating user: %s", err)
 			return User{}, err
 		}
 		il, err := s.repo.createInternalLogin(user.ID, hashedPassword, salt, pkg.SHA256)
 		if err != nil {
-			log.Printf("⚠️ Error creating internal user: %s", err)
+			s.logger.Printf("⚠️ Error creating internal user: %s", err)
 			return User{}, err
 		}
 		user.InternalLoginData = il
-		log.Printf("✅ User %v created successfully", user.ID)
+		s.logger.Printf("✅ User %v created successfully", user.ID)
 		s.logUserSession(user.ID, rm)
 
 		for _, f := range s.newUserCallbacks {
@@ -54,7 +57,7 @@ func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (User, e
 		return user, nil
 	}
 	if err != nil {
-		log.Printf("⚠️ Error creating user: %s", err)
+		s.logger.Printf("⚠️ Error creating user: %s", err)
 		return User{}, err
 	}
 	return User{}, &e.ErrUserAlreadyExists{}
@@ -63,7 +66,7 @@ func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (User, e
 func (s *Service) Login(mail, pwd string, rm pkg.RequestMeta) (User, error) {
 	uid, err := s.repo.getUserIDByEmail(mail)
 	if err != nil {
-		log.Printf("⚠️ Error logging in user: %s", err)
+		s.logger.Printf("⚠️ Error logging in user: %s", err)
 		err := &e.ErrInvalidInput{}
 		return User{}, err
 	}
@@ -73,7 +76,7 @@ func (s *Service) Login(mail, pwd string, rm pkg.RequestMeta) (User, error) {
 	}
 	if isLocked {
 		err := &e.ErrAccountLocked{}
-		log.Printf("⚠️ Error logging in user: %s", err)
+		s.logger.Printf("⚠️ Error logging in user: %s", err)
 		return User{}, err
 	}
 	salt, algorithm, err := s.repo.getSaltAndAlgorithmByUserID(uid)
@@ -83,7 +86,7 @@ func (s *Service) Login(mail, pwd string, rm pkg.RequestMeta) (User, error) {
 	hashedPassword := pkg.HashPassword(pwd, salt, algorithm)
 	user, err := s.repo.getInternalLoginUserByEmailAndPassword(mail, hashedPassword)
 	if err != nil {
-		log.Printf("⚠️ Error logging in user: %s", err)
+		s.logger.Printf("⚠️ Error logging in user: %s", err)
 		err := &e.ErrInvalidInput{}
 		s.repo.increaseLoginAttempts(uid)
 		return User{}, err

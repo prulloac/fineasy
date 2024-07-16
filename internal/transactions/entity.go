@@ -4,39 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/prulloac/fineasy/pkg"
 )
-
-type Group struct {
-	ID        uint      `json:"id" validate:"required,min=1"`
-	Name      string    `json:"name" validate:"required,min=1"`
-	CreatedBy uint      `json:"created_by" validate:"required,min=1"`
-	CreatedAt time.Time `json:"created_at" validate:"required,past_time"`
-	UpdatedAt time.Time `json:"updated_at" validate:"required,past_time"`
-	UserCount uint      `json:"user_count" validate:"required,min=0"`
-}
-
-func (g *Group) String() string {
-	out, err := json.Marshal(g)
-	if err != nil {
-		return fmt.Sprintf("%+v", g.Name)
-	}
-	return string(out)
-}
-
-type UserGroup struct {
-	ID        uint      `json:"id" validate:"required,min=1"`
-	UserID    uint      `json:"user_id" validate:"required,min=1"`
-	GroupID   uint      `json:"group_id" validate:"required,min=1"`
-	CreatedAt time.Time `json:"created_at" validate:"required,past_time"`
-}
-
-func (u *UserGroup) String() string {
-	out, err := json.Marshal(u)
-	if err != nil {
-		return fmt.Sprintf("%+v", u.GroupID)
-	}
-	return string(out)
-}
 
 type Account struct {
 	ID        uint      `json:"id" validate:"required,min=1"`
@@ -95,25 +65,23 @@ func (c *Category) String() string {
 	return string(out)
 }
 
-type transactionType uint8
-
 type Transaction struct {
-	ID              uint            `json:"id" validate:"required,min=1"`
-	CategoryID      uint            `json:"category_id" validate:"required,min=1"`
-	Currency        string          `json:"currency" validate:"required,min=1"`
-	CurrencyRate    float64         `json:"currency_rate" validate:"required,min=0"`
-	TransactionType transactionType `json:"transaction_type" validate:"required,min=1"`
-	BudgetID        uint            `json:"budget_id" validate:"required,min=1"`
-	Amount          float64         `json:"amount" validate:"required,min=0"`
-	Date            time.Time       `json:"date" validate:"required,past_time"`
-	ExecutedByName  int             `json:"executed_by" validate:"required,min=1"`
-	ExecutedByID    uint            `json:"executed_by_id"`
-	Description     string          `json:"description" validate:"required,min=1"`
-	ReceiptURL      string          `json:"receipt_url" validate:"required,min=1"`
-	RegisteredBy    uint            `json:"registered_by" validate:"required,min=1"`
-	RegisteredAt    time.Time       `json:"registered_at" validate:"required,past_time"`
-	CreatedAt       time.Time       `json:"created_at" validate:"required,past_time"`
-	UpdatedAt       time.Time       `json:"updated_at" validate:"required,past_time"`
+	ID              uint                `json:"id" validate:"required,min=1"`
+	CategoryID      uint                `json:"category_id" validate:"required,min=1"`
+	Currency        string              `json:"currency" validate:"required,min=1"`
+	CurrencyRate    float64             `json:"currency_rate" validate:"required,min=0"`
+	TransactionType pkg.TransactionType `json:"transaction_type" validate:"required,min=1"`
+	BudgetID        uint                `json:"budget_id" validate:"required,min=1"`
+	Amount          float64             `json:"amount" validate:"required,min=0"`
+	Date            time.Time           `json:"date" validate:"required,past_time"`
+	ExecutedByName  int                 `json:"executed_by" validate:"required,min=1"`
+	ExecutedByID    uint                `json:"executed_by_id"`
+	Description     string              `json:"description" validate:"required,min=1"`
+	ReceiptURL      string              `json:"receipt_url" validate:"required,min=1"`
+	RegisteredBy    uint                `json:"registered_by" validate:"required,min=1"`
+	RegisteredAt    time.Time           `json:"registered_at" validate:"required,past_time"`
+	CreatedAt       time.Time           `json:"created_at" validate:"required,past_time"`
+	UpdatedAt       time.Time           `json:"updated_at" validate:"required,past_time"`
 }
 
 func (t *Transaction) String() string {

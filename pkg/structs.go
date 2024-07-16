@@ -1,10 +1,20 @@
 package pkg
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type Timeframe struct {
 	Since time.Time
 	Until time.Time
+}
+
+type Model struct {
+	ID        uint         `json:"id" validate:"required,min=1"`
+	CreatedAt time.Time    `json:"created_at" validate:"required,past_time"`
+	UpdatedAt time.Time    `json:"updated_at" validate:"required,past_time"`
+	DeletedAt sql.NullTime `json:"deleted_at" validate:"past_time"`
 }
 
 type Algorithm uint16
@@ -64,4 +74,16 @@ const (
 
 func (f SocialRequestStatus) String() string {
 	return [...]string{"Pending", "Accepted", "Declined", "Invited", "Left"}[f]
+}
+
+type TransactionType uint8
+
+const (
+	Income TransactionType = iota
+	Expense
+	Transfer
+)
+
+func (t TransactionType) String() string {
+	return [...]string{"Income", "Expense", "Transfer"}[t]
 }

@@ -18,8 +18,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-	pDriver "gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type PostgresContainer struct {
@@ -28,6 +26,8 @@ type PostgresContainer struct {
 	Terminate func(context.Context) error
 	DB        *sql.DB
 }
+
+var logger = log.New(os.Stdout, "[TestContainers] ", log.LUTC)
 
 func StartPostgresContainer(ctx context.Context, t *testing.T) PostgresContainer {
 	container, err := postgres.Run(ctx, "postgres:alpine",
@@ -49,7 +49,7 @@ func StartPostgresContainer(ctx context.Context, t *testing.T) PostgresContainer
 		t.Errorf("error was not expected while getting container state: %s", err)
 	}
 
-	log.Println("Container state:", state.Running)
+	logger.Println("Container state:", state.Running)
 
 	connectionString, err := container.ConnectionString(ctx, "sslmode=disable")
 	if err != nil {
@@ -58,18 +58,13 @@ func StartPostgresContainer(ctx context.Context, t *testing.T) PostgresContainer
 
 	os.Setenv("DATABASE_URL", connectionString)
 
-	db, err := gorm.Open(pDriver.Open(connectionString), &gorm.Config{})
+	db, err := sql.Open("postgres", connectionString)
 
 	if err != nil {
 		t.Errorf("error was not expected while connecting to database: %s", err)
 	}
 
-	sqlDB, err := db.DB()
-	if err != nil {
-		t.Errorf("error was not expected while getting sql.DB: %s", err)
-	}
-
-	return PostgresContainer{container, connectionString, container.Terminate, sqlDB}
+	return PostgresContainer{container, connectionString, container.Terminate, db}
 }
 
 func RegisterUser(t *testing.T, handler *gin.Engine, input auth.RegisterInput) {
