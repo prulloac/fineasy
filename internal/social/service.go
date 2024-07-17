@@ -6,7 +6,6 @@ import (
 
 	e "github.com/prulloac/fineasy/internal/errors"
 	p "github.com/prulloac/fineasy/internal/persistence"
-	"github.com/prulloac/fineasy/pkg"
 )
 
 type Service struct {
@@ -28,16 +27,11 @@ func (s *Service) AddFriendship(fid, uid uint) (*FriendRequestOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := &FriendRequestOutput{
+	return &FriendRequestOutput{
 		UserID:   fr.UserID,
 		FriendID: fr.FriendID,
 		Status:   fr.Status.String(),
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error adding friend: %s", err)
-		return nil, err
-	}
-	return out, nil
+	}, nil
 }
 
 func (s *Service) GetFriendships(uid uint) ([]FriendShipOutput, error) {
@@ -52,10 +46,6 @@ func (s *Service) GetFriendships(uid uint) ([]FriendShipOutput, error) {
 			FriendID:     f.FriendID,
 			RelationType: f.RelationType.String(),
 		}
-		if err = pkg.ValidateStruct(e); err != nil {
-			log.Printf("⚠️ Error getting friends: %s", err)
-			return nil, err
-		}
 		out = append(out, e)
 	}
 	return out, nil
@@ -66,16 +56,11 @@ func (s *Service) GetFriendship(fid, uid uint) (*FriendShipOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := &FriendShipOutput{
+	return &FriendShipOutput{
 		UserID:       f.UserID,
 		FriendID:     f.FriendID,
 		RelationType: f.RelationType.String(),
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error getting friend: %s", err)
-		return nil, err
-	}
-	return out, nil
+	}, nil
 }
 
 func (s *Service) GetPendingFriendships(uid uint) ([]FriendRequestOutput, error) {
@@ -89,10 +74,6 @@ func (s *Service) GetPendingFriendships(uid uint) ([]FriendRequestOutput, error)
 			UserID:   fr.UserID,
 			FriendID: fr.FriendID,
 			Status:   fr.Status.String(),
-		}
-		if err = pkg.ValidateStruct(e); err != nil {
-			log.Printf("⚠️ Error getting friend requests: %s", err)
-			return nil, err
 		}
 		out = append(out, e)
 	}
@@ -108,16 +89,11 @@ func (s *Service) AcceptFriendship(status string, fid, uid uint) (*FriendRequest
 	if err != nil {
 		return nil, err
 	}
-	out := &FriendRequestOutput{
+	return &FriendRequestOutput{
 		UserID:   fr.UserID,
 		FriendID: fr.FriendID,
 		Status:   fr.Status.String(),
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error updating friend request: %s", err)
-		return nil, err
-	}
-	return out, nil
+	}, nil
 }
 
 func (s *Service) RejectFriendship(fid, uid uint) ([]FriendShipOutput, error) {
@@ -133,17 +109,12 @@ func (s *Service) CreateGroup(name string, uid uint) (*GroupBriefOutput, error) 
 	if err != nil {
 		return nil, err
 	}
-	out := &GroupBriefOutput{
+	return &GroupBriefOutput{
 		ID:          g.ID,
 		Name:        g.Name,
 		MemberCount: g.MemberCount,
 		CreatedBy:   g.CreatedBy,
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error creating group: %s", err)
-		return nil, err
-	}
-	return out, nil
+	}, nil
 }
 
 func (s *Service) GetGroupByID(gid, uid uint) (*GroupFullOutput, error) {
@@ -168,15 +139,7 @@ func (s *Service) GetGroupByID(gid, uid uint) (*GroupFullOutput, error) {
 			Status:   m.Status.String(),
 			JoinedAt: m.JoinedAt.String(),
 		}
-		if err = pkg.ValidateStruct(e); err != nil {
-			log.Printf("⚠️ Error getting group by id: %s", err)
-			return nil, err
-		}
 		out.Memberships = append(out.Memberships, e)
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error getting group by id: %s", err)
-		return nil, err
 	}
 	return out, nil
 }
@@ -186,17 +149,12 @@ func (s *Service) GetGroup(id uint) (*GroupBriefOutput, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := &GroupBriefOutput{
+	return &GroupBriefOutput{
 		ID:          g.ID,
 		Name:        g.Name,
 		MemberCount: g.MemberCount,
 		CreatedBy:   g.CreatedBy,
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error getting group: %s", err)
-		return nil, err
-	}
-	return out, nil
+	}, nil
 }
 
 func (s *Service) GetUserGroups(uid uint) ([]UserGroupOutput, error) {
@@ -224,10 +182,6 @@ func (s *Service) GetUserGroups(uid uint) ([]UserGroupOutput, error) {
 			JoinedAt:    ug.JoinedAt.String(),
 			LeftAt:      leftAt,
 		}
-		if err = pkg.ValidateStruct(e); err != nil {
-			log.Printf("⚠️ Error getting user groups: %s", err)
-			return nil, err
-		}
 		out = append(out, e)
 	}
 	return out, nil
@@ -252,17 +206,12 @@ func (s *Service) UpdateGroup(name string, gid, uid uint) (*GroupBriefOutput, er
 	if err != nil {
 		return nil, err
 	}
-	out := &GroupBriefOutput{
+	return &GroupBriefOutput{
 		ID:          g.ID,
 		Name:        g.Name,
 		MemberCount: g.MemberCount,
 		CreatedBy:   g.CreatedBy,
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error updating group: %s", err)
-		return nil, err
-	}
-	return out, nil
+	}, nil
 }
 
 func (s *Service) UpdateUserGroup(status string, gid, uid uint) (*UserGroupOutput, error) {
@@ -291,7 +240,7 @@ func (s *Service) UpdateUserGroup(status string, gid, uid uint) (*UserGroupOutpu
 	if ug.LeftAt.Valid {
 		leftAt = ug.LeftAt.Time.String()
 	}
-	out := &UserGroupOutput{
+	return &UserGroupOutput{
 		UserID:      ug.UserID,
 		GroupID:     ug.GroupID,
 		MemberCount: g.MemberCount,
@@ -300,12 +249,7 @@ func (s *Service) UpdateUserGroup(status string, gid, uid uint) (*UserGroupOutpu
 		JoinedAt:    ug.JoinedAt.String(),
 		LeftAt:      leftAt,
 		CreatedBy:   g.CreatedBy,
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error joining group: %s", err)
-		return nil, err
-	}
-	return out, nil
+	}, nil
 }
 
 func (s *Service) InviteUserGroup(gid, uid uint) (*GroupFullOutput, error) {
@@ -342,15 +286,7 @@ func (s *Service) GetGroupFullData(gid uint) (*GroupFullOutput, error) {
 			Status:   m.Status.String(),
 			JoinedAt: m.JoinedAt.String(),
 		}
-		if err = pkg.ValidateStruct(e); err != nil {
-			log.Printf("⚠️ Error getting group full data: %s", err)
-			return nil, err
-		}
 		out.Memberships = append(out.Memberships, e)
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error getting group full data: %s", err)
-		return nil, err
 	}
 	return out, nil
 }

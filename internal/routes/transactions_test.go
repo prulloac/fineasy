@@ -159,7 +159,38 @@ func TestAccountsFlow(t *testing.T) {
 			t.Errorf("handler returned unexpected body: got %v want %v",
 				rr.Body.String(), expectedBalance)
 		}
+	})
 
+	t.Run("create budget", func(t *testing.T) {
+		input := transactions.CreateBudgetInput{
+			Name:      "test budget",
+			AccountID: 1,
+			Currency:  "USD",
+			Amount:    "1000",
+			StartDate: "2021-01-01",
+			EndDate:   "2021-12-31",
+		}
+
+		inputJSON, _ := json.Marshal(input)
+		req, err := http.NewRequest("POST", "/v1/transactions/budgets", strings.NewReader(string(inputJSON)))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		req.Header.Set("Authorization", token)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusCreated {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusCreated)
+		}
+
+		expectedName := `"name":"test budget"`
+		if !strings.Contains(rr.Body.String(), expectedName) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedName)
+		}
 	})
 
 	container.Terminate(ctx)

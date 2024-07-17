@@ -9,7 +9,6 @@ import (
 	e "github.com/prulloac/fineasy/internal/errors"
 	p "github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/internal/social"
-	"github.com/prulloac/fineasy/pkg"
 )
 
 type Service struct {
@@ -42,19 +41,14 @@ func (s *Service) CreateAccount(name string, currency string, gid, uid uint) (*C
 	if err != nil {
 		return nil, err
 	}
-	out := &CreateAccountOutput{
+	return &CreateAccountOutput{
 		ID:        a.ID,
 		Name:      a.Name,
 		GroupID:   a.GroupID,
 		Currency:  a.Currency,
 		Balance:   a.Balance,
 		CreatedAt: a.CreatedAt.Format(time.RFC3339),
-	}
-	if err = pkg.ValidateStruct(out); err != nil {
-		log.Printf("⚠️ Error creating account: %s", err)
-		return nil, err
-	}
-	return out, nil
+	}, nil
 }
 
 func (s *Service) GetAccounts(uid uint) ([]AccountBriefOutput, error) {
@@ -118,4 +112,29 @@ func (s *Service) UpdateAccount(name string, cur string, balance float64, id, ui
 		Balance:  strconv.FormatFloat(a.Balance, 'f', 2, 64),
 	}
 	return out, nil
+}
+
+func (s *Service) CreateBudget(name, cur string, amount float64, start, end time.Time, aid, uid uint) (*BudgetOutput, error) {
+	ok, err := s.repo.UserHasAccessToAccount(int(uid), int(aid))
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		err := &e.ErrForbidden{}
+		log.Printf("⚠️ Error creating budget: %s", err)
+		return nil, err
+	}
+	b, err := s.repo.CreateBudget(name, cur, amount, start, end, aid, uid)
+	if err != nil {
+		return nil, err
+	}
+	return &BudgetOutput{
+		ID:        b.ID,
+		Name:      b.Name,
+		AccountID: b.AccountID,
+		Currency:  b.Currency,
+		Amount:    strconv.FormatFloat(b.Amount, 'f', 2, 64),
+		StartDate: b.StartDate.Format(time.RFC3339),
+		EndDate:   b.EndDate.Format(time.RFC3339),
+	}, nil
 }

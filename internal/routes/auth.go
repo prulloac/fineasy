@@ -58,10 +58,6 @@ func (a *AuthController) register(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := pkg.ValidateStruct(i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
 	rm := pkg.GetRequestMeta(c.Request)
 	user, err := a.authService.Register(i.Username, i.Email, i.Password, rm)
 	if err != nil {
@@ -77,18 +73,14 @@ func (a *AuthController) login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := pkg.ValidateStruct(i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
 	rm := pkg.GetRequestMeta(c.Request)
-	user, err := a.authService.Login(i.Email, i.Password, rm)
+	out, user, err := a.authService.Login(i.Email, i.Password, rm)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	c.Writer.Header().Set("Authorization", m.GenerateBearerToken(user))
-	c.JSON(http.StatusOK, user)
+	c.JSON(http.StatusOK, out)
 }
 
 func (a *AuthController) me(c *gin.Context) {

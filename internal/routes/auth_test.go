@@ -108,9 +108,8 @@ func TestInternalUserFlow(t *testing.T) {
 				status, http.StatusOK)
 		}
 
-		expectedEmail := `"email":"test@email.com"`
-		expectedUsername := `"username":"test"`
-		if !strings.Contains(rr.Body.String(), expectedEmail) || !strings.Contains(rr.Body.String(), expectedUsername) {
+		expectedAttribute := `{"session_id":"`
+		if !strings.Contains(rr.Body.String(), expectedAttribute) {
 			t.Errorf("handler returned unexpected body: got %v",
 				rr.Body.String())
 		}

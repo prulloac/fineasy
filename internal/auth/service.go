@@ -31,7 +31,7 @@ func (s *Service) Close() {
 	s.repo.Close()
 }
 
-func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (User, error) {
+func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (*UserRegistrationOutput, error) {
 	_, err := s.repo.getUserIDByEmail(mail)
 	if err == sql.ErrNoRows {
 		salt := pkg.GenerateSalt()
@@ -39,12 +39,12 @@ func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (User, e
 		user, err := s.repo.createUser(uname, mail)
 		if err != nil {
 			s.logger.Printf("⚠️ Error creating user: %s", err)
-			return User{}, err
+			return nil, err
 		}
 		il, err := s.repo.createInternalLogin(user.ID, hashedPassword, salt, pkg.SHA256)
 		if err != nil {
 			s.logger.Printf("⚠️ Error creating internal user: %s", err)
-			return User{}, err
+			return nil, err
 		}
 		user.InternalLoginData = il
 		s.logger.Printf("✅ User %v created successfully", user.ID)
@@ -54,34 +54,39 @@ func (s *Service) Register(uname, mail, pwd string, rm pkg.RequestMeta) (User, e
 			f(user)
 		}
 
-		return user, nil
+		return &UserRegistrationOutput{
+			ID:       user.ID,
+			Hash:     user.Hash,
+			Username: user.Username,
+			Email:    user.Email,
+		}, nil
 	}
 	if err != nil {
 		s.logger.Printf("⚠️ Error creating user: %s", err)
-		return User{}, err
+		return nil, err
 	}
-	return User{}, &e.ErrUserAlreadyExists{}
+	return nil, &e.ErrUserAlreadyExists{}
 }
 
-func (s *Service) Login(mail, pwd string, rm pkg.RequestMeta) (User, error) {
+func (s *Service) Login(mail, pwd string, rm pkg.RequestMeta) (*UserLoginOutput, User, error) {
 	uid, err := s.repo.getUserIDByEmail(mail)
 	if err != nil {
 		s.logger.Printf("⚠️ Error logging in user: %s", err)
 		err := &e.ErrInvalidInput{}
-		return User{}, err
+		return nil, User{}, err
 	}
 	isLocked, err := s.repo.isAccountLocked(uid)
 	if err != nil {
-		return User{}, fmt.Errorf("unexpected error: %w", err)
+		return nil, User{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	if isLocked {
 		err := &e.ErrAccountLocked{}
 		s.logger.Printf("⚠️ Error logging in user: %s", err)
-		return User{}, err
+		return nil, User{}, err
 	}
 	salt, algorithm, err := s.repo.getSaltAndAlgorithmByUserID(uid)
 	if err != nil {
-		return User{}, fmt.Errorf("unexpected error: %w", err)
+		return nil, User{}, fmt.Errorf("unexpected error: %w", err)
 	}
 	hashedPassword := pkg.HashPassword(pwd, salt, algorithm)
 	user, err := s.repo.getInternalLoginUserByEmailAndPassword(mail, hashedPassword)
@@ -89,25 +94,37 @@ func (s *Service) Login(mail, pwd string, rm pkg.RequestMeta) (User, error) {
 		s.logger.Printf("⚠️ Error logging in user: %s", err)
 		err := &e.ErrInvalidInput{}
 		s.repo.increaseLoginAttempts(uid)
-		return User{}, err
+		return nil, User{}, err
 	}
-	s.logUserSession(uid, rm)
-	return user, nil
+	sesh, err := s.logUserSession(uid, rm)
+	if err != nil {
+		return nil, User{}, fmt.Errorf("unexpected error: %w", err)
+	}
+	return &UserLoginOutput{
+		SessionID: sesh.SessionToken,
+	}, user, nil
 }
 
-func (s *Service) Me(uid uint) (User, error) {
-	return s.repo.getUserByID(uid)
+func (s *Service) Me(uid uint) (UserOutput, error) {
+	user, err := s.repo.getUserByID(uid)
+	return UserOutput{
+		ID:          user.ID,
+		Hash:        user.Hash,
+		Username:    user.Username,
+		Email:       user.Email,
+		Preferences: map[string]interface{}{},
+	}, err
 }
 
-func (s *Service) GetUserFromToken(token *jwt.Token) (User, error) {
+func (s *Service) GetUserFromToken(token *jwt.Token) (UserOutput, error) {
 	uid, ok := token.Claims.(jwt.MapClaims)["uid"].(float64)
 	if !ok {
-		return User{}, &e.ErrInvalidInput{}
+		return UserOutput{}, &e.ErrInvalidInput{}
 	}
 	return s.Me(uint(uid))
 }
 
-func (s *Service) logUserSession(uid uint, rm pkg.RequestMeta) error {
+func (s *Service) logUserSession(uid uint, rm pkg.RequestMeta) (UserSession, error) {
 	return s.repo.logUserSession(uid, rm.Ip, rm.Agent)
 }
 

@@ -11,13 +11,13 @@ import (
 
 type User struct {
 	pkg.Model
-	Hash              string        `json:"hash" validate:"required,uuid7"`
-	Username          string        `json:"username" validate:"required,min=1"`
-	Email             string        `json:"email" validate:"required,email"`
-	ValidatedAt       sql.NullTime  `json:"validated_at"`
-	Disabled          bool          `json:"disabled"`
-	InternalLoginData InternalLogin `json:"-" validate:"omitempty,omitnil"`
-	ExternalLoginData ExternalLogin `json:"-" validate:"omitempty,omitnil"`
+	Hash              string
+	Username          string
+	Email             string
+	ValidatedAt       sql.NullTime
+	Disabled          bool
+	InternalLoginData InternalLogin
+	ExternalLoginData ExternalLogin
 }
 
 func (u *User) String() string {
@@ -30,14 +30,14 @@ func (u *User) String() string {
 
 type InternalLogin struct {
 	pkg.Model
-	UserID                uint          `json:"user_id" validate:"required,min=1"`
-	Password              string        `json:"password" validate:"required,min=1"`
-	PasswordSalt          string        `json:"password_salt" validate:"required"`
-	Algorithm             pkg.Algorithm `json:"algorithm" validate:"required,min=0"`
-	PasswordLastUpdatedAt time.Time     `json:"password_last_updated_at" validate:"required,past_time"`
-	LoginAttempts         int           `json:"login_attempts" validate:"required,min=1"`
-	LastLoginAttempt      time.Time     `json:"last_login_attempt" validate:"required,past_time"`
-	LastLoginSuccess      time.Time     `json:"last_login_success" validate:"required,past_time"`
+	UserID                uint
+	Password              string
+	PasswordSalt          string
+	Algorithm             pkg.Algorithm
+	PasswordLastUpdatedAt time.Time
+	LoginAttempts         int
+	LastLoginAttempt      time.Time
+	LastLoginSuccess      time.Time
 }
 
 func (i *InternalLogin) String() string {
@@ -49,13 +49,13 @@ func (i *InternalLogin) String() string {
 }
 
 type LoginToken struct {
-	ID        int           `json:"id" validate:"required,min=1"`
-	UserID    int           `json:"user_id" validate:"required,min=1"`
-	Token     string        `json:"token" validate:"required,min=1"`
-	TokenType pkg.TokenType `json:"token_type" validate:"required,min=1"`
-	ExpiresAt time.Time     `json:"expires_at" validate:"required,past_time"`
-	UsedAt    time.Time     `json:"used_at" validate:"required,past_time"`
-	CreatedAt time.Time     `json:"created_at" validate:"required,past_time"`
+	ID        int
+	UserID    int
+	Token     string
+	TokenType pkg.TokenType
+	ExpiresAt time.Time
+	UsedAt    time.Time
+	CreatedAt time.Time
 }
 
 func (l *LoginToken) String() string {
@@ -67,13 +67,13 @@ func (l *LoginToken) String() string {
 }
 
 type ExternalLoginProvider struct {
-	ID        int       `json:"id" validate:"required,min=1"`
-	Name      string    `json:"name" validate:"required,min=2,max=254"`
-	Type      int       `json:"type" validate:"required"`
-	Endpoint  string    `json:"endpoint" validate:"required,url"`
-	Enabled   bool      `json:"enabled" validate:"required,boolean"`
-	CreatedAt time.Time `json:"created_at" validate:"required,past_time"`
-	UpdatedAt time.Time `json:"updated_at" validate:"required,past_time"`
+	ID        int
+	Name      string
+	Type      int
+	Endpoint  string
+	Enabled   bool
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func (e *ExternalLoginProvider) String() string {
@@ -85,10 +85,10 @@ func (e *ExternalLoginProvider) String() string {
 }
 
 type ExternalLogin struct {
-	ID         int       `json:"id" validate:"required,min=1"`
-	UserID     int       `json:"user_id" validate:"required,min=1"`
-	ProviderID int       `json:"provider_id" validate:"required,min=1"`
-	CreatedAt  time.Time `json:"created_at" validate:"required,past_time"`
+	ID         int
+	UserID     int
+	ProviderID int
+	CreatedAt  time.Time
 }
 
 func (e *ExternalLogin) String() string {
@@ -100,13 +100,13 @@ func (e *ExternalLogin) String() string {
 }
 
 type ExternalLoginToken struct {
-	ID              int       `json:"id" validate:"required,min=1"`
-	ExternalLoginID int       `json:"external_login_id" validate:"required,min=1"`
-	LoginIP         string    `json:"login_ip" validate:"required,min=1"`
-	UserAgent       string    `json:"user_agent" validate:"required,min=1"`
-	LoggedInAt      time.Time `json:"logged_in_at" validate:"required,past_time"`
-	Token           string    `json:"token" validate:"required,min=1"`
-	CreatedAt       time.Time `json:"created_at" validate:"required,past_time"`
+	ID              int
+	ExternalLoginID int
+	LoginIP         string
+	UserAgent       string
+	LoggedInAt      time.Time
+	Token           string
+	CreatedAt       time.Time
 }
 
 func (e *ExternalLoginToken) String() string {
@@ -119,11 +119,12 @@ func (e *ExternalLoginToken) String() string {
 
 type UserSession struct {
 	pkg.Model
-	UserID      uint      `json:"user_id" validate:"required,min=1"`
-	LoginIP     string    `json:"login_ip" validate:"required,min=1"`
-	UserAgent   string    `json:"user_agent" validate:"required,min=1"`
-	LoggedInAt  time.Time `json:"logged_in_at" validate:"required,past_time"`
-	LoggedOutAt time.Time `json:"logged_out_at" validate:"required,past_time"`
+	UserID       uint
+	LoginIP      string
+	UserAgent    string
+	LoggedInAt   time.Time
+	LoggedOutAt  sql.NullTime
+	SessionToken string
 }
 
 func (u *UserSession) String() string {

@@ -87,9 +87,6 @@ func (s *SocialRepository) GetFriendshipsByUserID(userID uint) ([]Friendship, er
 		if err := rows.Scan(&f.ID, &f.UserID, &f.FriendID, &f.Status, &f.RelationType, &f.CreatedAt, &f.UpdatedAt); err != nil {
 			return nil, err
 		}
-		if err = pkg.ValidateStruct(f); err != nil {
-			return nil, err
-		}
 		friends = append(friends, f)
 	}
 	return friends, nil
@@ -125,9 +122,6 @@ func (s *SocialRepository) GetPendingFriendshipsByUserID(userID uint) ([]Friends
 		if err := rows.Scan(&r.ID, &r.UserID, &r.FriendID, &r.Status, &r.RelationType, &r.CreatedAt, &r.UpdatedAt); err != nil {
 			return nil, err
 		}
-		if err = pkg.ValidateStruct(r); err != nil {
-			return nil, err
-		}
 		requests = append(requests, r)
 	}
 	return requests, nil
@@ -149,9 +143,6 @@ func (s *SocialRepository) AcceptFriendship(userID, friendID uint) (*Friendship,
 	for rows.Next() {
 		var r Friendship
 		if err := rows.Scan(&r.ID, &r.UserID, &r.FriendID, &r.Status, &r.RelationType, &r.CreatedAt, &r.UpdatedAt); err != nil {
-			return nil, err
-		}
-		if err = pkg.ValidateStruct(r); err != nil {
 			return nil, err
 		}
 		f = append(f, r)
@@ -244,9 +235,6 @@ func (s *SocialRepository) GetGroupsByUserID(userID uint) ([]Group, error) {
 		if err := rows.Scan(&g.ID, &g.Name, &g.CreatedBy, &g.CreatedAt, &g.UpdatedAt, &g.MemberCount); err != nil {
 			return nil, err
 		}
-		if err = pkg.ValidateStruct(g); err != nil {
-			return nil, err
-		}
 		groups = append(groups, g)
 	}
 	return groups, nil
@@ -309,9 +297,6 @@ func (s *SocialRepository) GetUserGroupsByUserID(userID uint) ([]UserGroup, erro
 		if err := rows.Scan(&ug.ID, &ug.UserID, &ug.GroupID, &ug.JoinedAt, &ug.LeftAt, &ug.Status); err != nil {
 			return nil, err
 		}
-		if err = pkg.ValidateStruct(ug); err != nil {
-			return nil, err
-		}
 		userGroups = append(userGroups, ug)
 	}
 	return userGroups, nil
@@ -362,9 +347,6 @@ func (s *SocialRepository) GetMembershipsByGroupID(groupID uint) ([]UserGroup, e
 	for rows.Next() {
 		var ug UserGroup
 		if err := rows.Scan(&ug.ID, &ug.UserID, &ug.GroupID, &ug.JoinedAt, &ug.LeftAt, &ug.Status); err != nil {
-			return nil, err
-		}
-		if err = pkg.ValidateStruct(ug); err != nil {
 			return nil, err
 		}
 		memberships = append(memberships, ug)

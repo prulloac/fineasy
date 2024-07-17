@@ -33,7 +33,7 @@ Open the project in Visual Studio Code and click on the `Reopen in Container` bu
 ## Features
 
 > [!NOTE]
-> The features are divided into three categories: Core, Conveniences, Usability and Extra mile. The status is divided between API and Frontend. The status can be one of the following: `Not Yet ⏳`, `WIP 🛠️`, `Testing 👷`, `Done ✅`
+> The features are divided into four categories: Core, Conveniences, Usability and Extra mile. The status is divided between API and Frontend. The status can be one of the following: `Not Yet ⏳`, `WIP 🛠️`, `Testing 👷`, `Done ✅`
 
 Core:
 
@@ -45,7 +45,6 @@ Core:
 | **Multiple Personal Accounts** | Users can add multiple personal accounts. | `WIP 🛠️` | `Not Yet ⏳` |
 | **Personal Tracking** | Users can add personal trackings. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Shared Tracking** | Users can add shared trackings. | `Not Yet ⏳` | `Not Yet ⏳` |
-| **Categories** | select categories for trackings. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Budgeting** | Users can set budgets for their income, expenses and savings. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Revert Actions** | Users can revert their actions. | `Not Yet ⏳` | `Not Yet ⏳` |
 
@@ -58,6 +57,7 @@ Conveniences
 | **Filter** | Users can filter their income, expenses and savings. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Dashboard** | Users can view their income, expenses and savings in a dashboard. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Reports** | Users can view reports of their income, expenses and savings. | `Not Yet ⏳` | `Not Yet ⏳` |
+| **Categories** | Select categories for trackings. | `Not Yet ⏳` | `Not Yet ⏳` |
 
 Usability
 

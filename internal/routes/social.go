@@ -9,7 +9,6 @@ import (
 	m "github.com/prulloac/fineasy/internal/middleware"
 	p "github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/internal/social"
-	"github.com/prulloac/fineasy/pkg"
 )
 
 type SocialController struct {
@@ -54,10 +53,6 @@ func (s *SocialController) addFriendship(c *gin.Context) {
 
 	var i social.AddFriendInput
 	if err := c.ShouldBindJSON(&i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := pkg.ValidateStruct(i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -147,10 +142,6 @@ func (s *SocialController) acceptFriendship(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := pkg.ValidateStruct(i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
 	if i.Status != "Accepted" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
 		return
@@ -183,8 +174,8 @@ func (s *SocialController) deleteFriendship(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := pkg.ValidateStruct(i); err != nil || i.FriendID == uint(uid) {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	if i.FriendID == uint(uid) {
+		c.JSON(http.StatusForbidden, gin.H{"error": "cannot delete yourself as friend"})
 		return
 	}
 	if i.UserID != uint(uid) {
@@ -210,10 +201,6 @@ func (s *SocialController) createGroup(c *gin.Context) {
 
 	var i social.CreateGroupInput
 	if err := c.ShouldBindJSON(&i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := pkg.ValidateStruct(i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -279,10 +266,6 @@ func (s *SocialController) updateGroup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := pkg.ValidateStruct(i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -308,10 +291,6 @@ func (s *SocialController) inviteUserGroup(c *gin.Context) {
 
 	var i social.JoinGroupInput
 	if err := c.ShouldBindJSON(&i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := pkg.ValidateStruct(i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -343,10 +322,6 @@ func (s *SocialController) updateUserGroup(c *gin.Context) {
 
 	var i social.JoinGroupInput
 	if err := c.ShouldBindJSON(&i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := pkg.ValidateStruct(i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}

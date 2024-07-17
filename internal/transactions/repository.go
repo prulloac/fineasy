@@ -2,6 +2,7 @@ package transactions
 
 import (
 	"log"
+	"time"
 
 	p "github.com/prulloac/fineasy/internal/persistence"
 )
@@ -20,22 +21,6 @@ func (r *TransactionsRepository) Close() {
 
 func (r *TransactionsRepository) CreateTables() error {
 	_, err := r.Persistence.SQL().Exec(`
-		CREATE TABLE IF NOT EXISTS groups (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			created_by INT NOT NULL,
-			created_at TIMESTAMP NOT NULL,
-			updated_at TIMESTAMP NOT NULL,
-			user_count INT NOT NULL
-		);
-
-		CREATE TABLE IF NOT EXISTS user_groups (
-			id SERIAL PRIMARY KEY,
-			user_id INT NOT NULL,
-			group_id INT NOT NULL,
-			created_at TIMESTAMP NOT NULL
-		);
-
 		CREATE TABLE IF NOT EXISTS accounts (
 			id SERIAL PRIMARY KEY,
 			created_by INT NOT NULL,
@@ -60,19 +45,9 @@ func (r *TransactionsRepository) CreateTables() error {
 			updated_at TIMESTAMP NOT NULL
 		);
 
-		CREATE TABLE IF NOT EXISTS categories (
-			id SERIAL PRIMARY KEY,
-			name VARCHAR(255) NOT NULL,
-			icon VARCHAR(255) NOT NULL,
-			color VARCHAR(255) NOT NULL,
-			description TEXT,
-			ord INT NOT NULL,
-			group_id INT NOT NULL
-		);
-
 		CREATE TABLE IF NOT EXISTS transactions (
 			id SERIAL PRIMARY KEY,
-			category_id INT NOT NULL,
+			category VARCHAR(255),
 			currency VARCHAR(255) NOT NULL,
 			currency_rate FLOAT NOT NULL,
 			transaction_type smallint NOT NULL,
@@ -89,7 +64,6 @@ func (r *TransactionsRepository) CreateTables() error {
 			updated_at TIMESTAMP NOT NULL
 		);
 
-		CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_name ON categories (name);
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_budgets_name_account_id ON budgets (name, account_id);
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_name_group_id ON accounts (name, group_id);
 	`)
@@ -99,11 +73,8 @@ func (r *TransactionsRepository) CreateTables() error {
 func (r *TransactionsRepository) DropTable() error {
 	_, err := r.Persistence.SQL().Exec(`
 		DROP TABLE IF EXISTS transactions;
-		DROP TABLE IF EXISTS categories;
 		DROP TABLE IF EXISTS budgets;
 		DROP TABLE IF EXISTS accounts;
-		DROP TABLE IF EXISTS user_groups;
-		DROP TABLE IF EXISTS groups;
 	`)
 	return err
 }
@@ -175,4 +146,14 @@ func (r *TransactionsRepository) UpdateAccount(id int, name, currency string, ba
 		RETURNING id, name, group_id, currency, balance, created_by, created_at, updated_at
 	`, name, currency, balance, id).Scan(&account.ID, &account.Name, &account.GroupID, &account.Currency, &account.Balance, &account.CreatedBy, &account.CreatedAt, &account.UpdatedAt)
 	return account, err
+}
+
+func (r *TransactionsRepository) CreateBudget(name, currency string, amount float64, startDate, endDate time.Time, accountID, createdBy uint) (*Budget, error) {
+	budget := &Budget{}
+	err := r.Persistence.SQL().QueryRow(`
+		INSERT INTO budgets (name, account_id, currency, amount, created_by, start_date, end_date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+		RETURNING id, name, account_id, currency, amount, created_by, start_date, end_date, created_at, updated_at
+	`, name, accountID, currency, amount, createdBy, startDate, endDate).Scan(&budget.ID, &budget.Name, &budget.AccountID, &budget.Currency, &budget.Amount, &budget.CreatedBy, &budget.StartDate, &budget.EndDate, &budget.CreatedAt, &budget.UpdatedAt)
+	return budget, err
 }

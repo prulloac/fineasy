@@ -84,6 +84,7 @@ func (a *AuthRepository) CreateTables() error {
 	);
 	CREATE TABLE IF NOT EXISTS user_sessions (
 		id SERIAL PRIMARY KEY,
+		session_token VARCHAR(255) NOT NULL,
 		user_id INT NOT NULL references users(id) ON DELETE CASCADE,
 		login_ip VARCHAR(255) NOT NULL,
 		user_agent VARCHAR(255) NOT NULL,
@@ -198,12 +199,18 @@ func (a *AuthRepository) isAccountLocked(uid uint) (bool, error) {
 	return disabled, err
 }
 
-func (a *AuthRepository) logUserSession(uid uint, ip string, userAgent string) error {
-	return a.Persistence.SQL().QueryRow(`
+func (a *AuthRepository) logUserSession(uid uint, ip string, userAgent string) (UserSession, error) {
+	token, err := uuid.NewV7()
+	if err != nil {
+		return UserSession{}, err
+	}
+	var session UserSession
+	err = a.Persistence.SQL().QueryRow(`
 	INSERT INTO user_sessions
-	(user_id, login_ip, user_agent) VALUES ($1, $2, $3)
-	RETURNING id
-	`, uid, ip, userAgent).Scan()
+	(user_id, login_ip, user_agent, session_token) VALUES ($1, $2, $3, $4)
+	RETURNING id, user_id, login_ip, user_agent, session_token, logged_in_at, logged_out_at, created_at, updated_at
+	`, uid, ip, userAgent, token.String()).Scan(&session.ID, &session.UserID, &session.LoginIP, &session.UserAgent, &session.SessionToken, &session.LoggedInAt, &session.LoggedOutAt, &session.CreatedAt, &session.UpdatedAt)
+	return session, err
 }
 
 func (a *AuthRepository) getUserByID(uid uint) (User, error) {

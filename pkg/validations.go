@@ -33,10 +33,3 @@ func UUID7(fl validator.FieldLevel) bool {
 	}
 	return false
 }
-
-func ValidateStruct(s interface{}) error {
-	validate := validator.New()
-	validate.RegisterValidation("past_time", PastTime)
-	validate.RegisterValidation("uuid7", UUID7)
-	return validate.Struct(s)
-}

@@ -168,20 +168,10 @@ erDiagram
         updated_at datetime
     }
 
-    CATEGORIES {
-        id int
-        name varchar
-        icon varchar
-        color varchar
-        description text
-        ord int
-        group_id int
-    }
-
     TRANSACTIONS {
         id int
-        category_id int
-        currency_id int
+        category varchar
+        currency varchar
         currency_rate float
         transaction_type int
         budget_id int
@@ -256,6 +246,29 @@ erDiagram
         language varchar
         entries json
         upserted_at datetime
+    }
+
+    GROUP_PREFERENCES {
+        id int
+        group_id int
+        theme varchar
+        language varchar
+        entries json
+        upserted_at datetime
+    }
+
+    CATEGORIES {
+        id int
+        user_id int
+        group_id int
+        name varchar
+        icon varchar
+        color varchar
+        description text
+        order int
+        created_at datetime
+        updated_at datetime
+        deleted_at datetime
     }
 
 ```

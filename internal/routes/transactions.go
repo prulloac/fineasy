@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	m "github.com/prulloac/fineasy/internal/middleware"
 	p "github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/internal/transactions"
-	"github.com/prulloac/fineasy/pkg"
 )
 
 type TransactionController struct {
@@ -26,27 +26,25 @@ func (c *TransactionController) Close() {
 }
 
 func (c *TransactionController) RegisterPaths(rg *gin.RouterGroup) {
-	g := rg.Group("/transactions")
-	g.POST("accounts", m.SecureRequest, c.createAccount)
-	g.GET("accounts", m.SecureRequest, c.getAccounts)
-	g.GET("accounts/:id", m.SecureRequest, c.getAccount)
-	g.PATCH("accounts/:id", m.SecureRequest, c.updateAccount)
-	// g.DELETE("accounts/:id", m.SecureRequest, deleteAccount)
-	// g.POST("categories", m.SecureRequest, createCategory)
-	// g.GET("categories", m.SecureRequest, getCategories)
-	// g.GET("categories/:id", m.SecureRequest, getCategory)
-	// g.PATCH("categories/:id", m.SecureRequest, updateCategory)
-	// g.DELETE("categories/:id", m.SecureRequest, deleteCategory)
-	// g.POST("transactions", m.SecureRequest, createTransaction)
-	// g.GET("transactions", m.SecureRequest, getTransactions)
-	// g.GET("transactions/:id", m.SecureRequest, getTransaction)
-	// g.PATCH("transactions/:id", m.SecureRequest, updateTransaction)
-	// g.DELETE("transactions/:id", m.SecureRequest, deleteTransaction)
-	// g.POST("budgets", m.SecureRequest, createBudget)
-	// g.GET("budgets", m.SecureRequest, getBudgets)
-	// g.GET("budgets/:id", m.SecureRequest, getBudget)
-	// g.PATCH("budgets/:id", m.SecureRequest, updateBudget)
-	// g.DELETE("budgets/:id", m.SecureRequest, deleteBudget)
+	g := rg.Group("/transactions", m.SecureRequest)
+	ac := g.Group("/accounts")
+	ac.POST("", c.createAccount)
+	ac.GET("", c.getAccounts)
+	ac.GET("/:id", c.getAccount)
+	ac.PATCH("/:id", c.updateAccount)
+	// g.DELETE("accounts/:id", c.deleteAccount)
+	b := g.Group("/budgets")
+	b.POST("", c.createBudget)
+	// g.GET("", c.getBudgets)
+	// g.GET("/:id", c.getBudget)
+	// g.PATCH("/:id", c.updateBudget)
+	// g.DELETE("/:id", c.deleteBudget)
+	tx := g.Group("/transactions")
+	tx.POST("", c.createTransaction)
+	// g.GET("transactions", c.getTransactions)
+	// g.GET("transactions/:id", c.getTransaction)
+	// g.PATCH("transactions/:id", c.updateTransaction)
+	// g.DELETE("transactions/:id", c.deleteTransaction)
 }
 
 func (t *TransactionController) createAccount(c *gin.Context) {
@@ -58,10 +56,6 @@ func (t *TransactionController) createAccount(c *gin.Context) {
 
 	var i transactions.CreateAccountInput
 	if err := c.ShouldBindJSON(&i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	if err := pkg.ValidateStruct(i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -141,10 +135,6 @@ func (t *TransactionController) updateAccount(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := pkg.ValidateStruct(i); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
 	balance, err := strconv.ParseFloat(i.Balance, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -158,4 +148,46 @@ func (t *TransactionController) updateAccount(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, out)
+}
+
+func (t *TransactionController) createBudget(c *gin.Context) {
+	token, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
+		return
+	}
+
+	var i transactions.CreateBudgetInput
+	if err := c.ShouldBindJSON(&i); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	amount, err := strconv.ParseFloat(i.Amount, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	startDate, err := time.Parse(time.DateOnly, i.StartDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	endDate, err := time.Parse(time.DateOnly, i.EndDate)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	out, err := t.transactionService.CreateBudget(i.Name, i.Currency, amount, startDate, endDate, i.AccountID, uint(uid))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusCreated, out)
+}
+
+func (t *TransactionController) createTransaction(c *gin.Context) {
+	c.JSON(http.StatusNotImplemented, gin.H{"error": "not implemented"})
 }
