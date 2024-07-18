@@ -19,13 +19,13 @@ type AccountBriefOutput struct {
 	ID       uint   `json:"id" binding:"required"`
 	Name     string `json:"name" binding:"required"`
 	Currency string `json:"currency" binding:"required"`
-	Balance  string `json:"balance" binding:"required"`
+	Balance  string `json:"balance" binding:"required.numeric"`
 }
 
 type UpdateAccountInput struct {
 	Name     string `json:"name" binding:"required"`
 	Currency string `json:"currency" binding:"required"`
-	Balance  string `json:"balance" binding:"required"`
+	Balance  string `json:"balance" binding:"required,numeric"`
 }
 
 type CreateBudgetInput struct {
@@ -33,8 +33,8 @@ type CreateBudgetInput struct {
 	AccountID uint   `json:"account_id" binding:"required"`
 	Currency  string `json:"currency" binding:"required"`
 	Amount    string `json:"amount" binding:"required"`
-	StartDate string `json:"start_date" binding:"required"`
-	EndDate   string `json:"end_date" binding:"required"`
+	StartDate string `json:"start_date" binding:"required,date"`
+	EndDate   string `json:"end_date" binding:"required,date"`
 }
 
 type BudgetOutput struct {
@@ -43,6 +43,6 @@ type BudgetOutput struct {
 	AccountID uint   `json:"account_id" binding:"required"`
 	Currency  string `json:"currency" binding:"required"`
 	Amount    string `json:"amount" binding:"required"`
-	StartDate string `json:"start_date" binding:"required"`
-	EndDate   string `json:"end_date" binding:"required"`
+	StartDate string `json:"start_date" binding:"required,date"`
+	EndDate   string `json:"end_date" binding:"required,date"`
 }

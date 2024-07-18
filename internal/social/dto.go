@@ -14,6 +14,18 @@ type DeleteFriendInput struct {
 	FriendID uint `json:"friend_id" binding:"required,min=1"`
 }
 
+type FriendRequestOutput struct {
+	UserID   uint   `json:"user_id" binding:"required,min=1"`
+	FriendID uint   `json:"friend_id" binding:"required,min=1"`
+	Status   string `json:"status" binding:"required,min=1"`
+}
+
+type FriendShipOutput struct {
+	UserID       uint   `json:"user_id" binding:"required,min=1"`
+	FriendID     uint   `json:"friend_id" binding:"required,min=1"`
+	RelationType string `json:"relation_type" binding:"required,min=1"`
+}
+
 type CreateGroupInput struct {
 	Name string `json:"name" binding:"required,min=1"`
 }
@@ -26,18 +38,6 @@ type JoinGroupInput struct {
 	GroupID uint   `json:"group_id" binding:"required,min=1"`
 	UserID  uint   `json:"user_id" binding:"required,min=1"`
 	Status  string `json:"status" binding:"required,min=1"`
-}
-
-type FriendRequestOutput struct {
-	UserID   uint   `json:"user_id" binding:"required,min=1"`
-	FriendID uint   `json:"friend_id" binding:"required,min=1"`
-	Status   string `json:"status" binding:"required,min=1"`
-}
-
-type FriendShipOutput struct {
-	UserID       uint   `json:"user_id" binding:"required,min=1"`
-	FriendID     uint   `json:"friend_id" binding:"required,min=1"`
-	RelationType string `json:"relation_type" binding:"required,min=1"`
 }
 
 type GroupBriefOutput struct {

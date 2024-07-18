@@ -11,10 +11,9 @@ import (
 )
 
 type Persistence struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *log.Logger
 }
-
-var logger = log.New(os.Stdout, "[Persistence] ", log.LUTC)
 
 func NewPersistence() *Persistence {
 	godotenv.Load()
@@ -28,9 +27,9 @@ func NewPersistence() *Persistence {
 		panic(err)
 	}
 
-	logger.Println("Database Successfully connected!")
+	instance := &Persistence{db: db, logger: log.New(os.Stdout, "[Persistence] ", log.LUTC)}
 
-	instance := &Persistence{db}
+	instance.logger.Println("Database Successfully connected!")
 	return instance
 }
 
@@ -39,7 +38,7 @@ func (p *Persistence) Close() {
 	if err != nil {
 		panic(err)
 	}
-	logger.Println("Database Successfully disconnected!")
+	p.logger.Println("Database Successfully disconnected!")
 }
 
 func (p *Persistence) SQL() *sql.DB {

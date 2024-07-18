@@ -1,7 +1,6 @@
 package transactions
 
 import (
-	"log"
 	"slices"
 	"strconv"
 	"time"
@@ -34,7 +33,6 @@ func (s *Service) CreateAccount(name string, currency string, gid, uid uint) (*C
 		return i.GroupID == gid
 	}) {
 		err := &e.ErrForbidden{}
-		log.Printf("⚠️ Error creating account: %s", err)
 		return nil, err
 	}
 	a, err := s.repo.CreateAccount(name, currency, gid, uid)
@@ -68,14 +66,13 @@ func (s *Service) GetAccounts(uid uint) ([]AccountBriefOutput, error) {
 	return out, nil
 }
 
-func (s *Service) GetAccountByID(id, uid int) (*AccountBriefOutput, error) {
+func (s *Service) GetAccountByID(id, uid uint) (*AccountBriefOutput, error) {
 	ok, err := s.repo.UserHasAccessToAccount(uid, id)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		err := &e.ErrForbidden{}
-		log.Printf("⚠️ Error getting account: %s", err)
 		return nil, err
 	}
 	a, err := s.repo.GetAccountByID(id)
@@ -91,14 +88,13 @@ func (s *Service) GetAccountByID(id, uid int) (*AccountBriefOutput, error) {
 	return out, nil
 }
 
-func (s *Service) UpdateAccount(name string, cur string, balance float64, id, uid int) (*AccountBriefOutput, error) {
+func (s *Service) UpdateAccount(name string, cur string, balance float64, id, uid uint) (*AccountBriefOutput, error) {
 	ok, err := s.repo.UserHasAccessToAccount(uid, id)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		err := &e.ErrForbidden{}
-		log.Printf("⚠️ Error updating account: %s", err)
 		return nil, err
 	}
 	a, err := s.repo.UpdateAccount(id, name, cur, balance)
@@ -115,13 +111,12 @@ func (s *Service) UpdateAccount(name string, cur string, balance float64, id, ui
 }
 
 func (s *Service) CreateBudget(name, cur string, amount float64, start, end time.Time, aid, uid uint) (*BudgetOutput, error) {
-	ok, err := s.repo.UserHasAccessToAccount(int(uid), int(aid))
+	ok, err := s.repo.UserHasAccessToAccount(uid, aid)
 	if err != nil {
 		return nil, err
 	}
 	if !ok {
 		err := &e.ErrForbidden{}
-		log.Printf("⚠️ Error creating budget: %s", err)
 		return nil, err
 	}
 	b, err := s.repo.CreateBudget(name, cur, amount, start, end, aid, uid)
@@ -137,4 +132,24 @@ func (s *Service) CreateBudget(name, cur string, amount float64, start, end time
 		StartDate: b.StartDate.Format(time.RFC3339),
 		EndDate:   b.EndDate.Format(time.RFC3339),
 	}, nil
+}
+
+func (s *Service) GetBudgets(uid uint) ([]BudgetOutput, error) {
+	bs, err := s.repo.GetBudgetsByUserID(uid)
+	if err != nil {
+		return nil, err
+	}
+	var out []BudgetOutput
+	for _, b := range bs {
+		out = append(out, BudgetOutput{
+			ID:        b.ID,
+			Name:      b.Name,
+			AccountID: b.AccountID,
+			Currency:  b.Currency,
+			Amount:    strconv.FormatFloat(b.Amount, 'f', 2, 64),
+			StartDate: b.StartDate.Format(time.DateOnly),
+			EndDate:   b.EndDate.Format(time.DateOnly),
+		})
+	}
+	return out, nil
 }

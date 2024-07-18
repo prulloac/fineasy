@@ -59,7 +59,7 @@ func TestFriendshipFlow(t *testing.T) {
 		}
 
 		inputJSON, _ := json.Marshal(input)
-		req, err := http.NewRequest("POST", "/v1/social/friends/requests", strings.NewReader(string(inputJSON)))
+		req, err := http.NewRequest("POST", "/v1/friends/requests", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -87,7 +87,7 @@ func TestFriendshipFlow(t *testing.T) {
 	})
 
 	t.Run("get empty friends list", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/v1/social/friends", nil)
+		req, err := http.NewRequest("GET", "/v1/friends", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -108,7 +108,7 @@ func TestFriendshipFlow(t *testing.T) {
 	})
 
 	t.Run("get friend requests request", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/v1/social/friends/requests", nil)
+		req, err := http.NewRequest("GET", "/v1/friends/requests", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -140,7 +140,7 @@ func TestFriendshipFlow(t *testing.T) {
 		}
 
 		inputJSON, _ := json.Marshal(input)
-		req, err := http.NewRequest("PATCH", "/v1/social/friends/requests/2", strings.NewReader(string(inputJSON)))
+		req, err := http.NewRequest("PATCH", "/v1/friends/requests/2", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -165,7 +165,7 @@ func TestFriendshipFlow(t *testing.T) {
 	})
 
 	t.Run("get friends list", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/v1/social/friends", nil)
+		req, err := http.NewRequest("GET", "/v1/friends", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -234,7 +234,7 @@ func TestGroupFlow(t *testing.T) {
 		}
 
 		inputJSON, _ := json.Marshal(input)
-		req, err := http.NewRequest("POST", "/v1/social/groups", strings.NewReader(string(inputJSON)))
+		req, err := http.NewRequest("POST", "/v1/groups", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -261,7 +261,7 @@ func TestGroupFlow(t *testing.T) {
 	})
 
 	t.Run("get groups", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/v1/social/groups", nil)
+		req, err := http.NewRequest("GET", "/v1/groups", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -287,7 +287,7 @@ func TestGroupFlow(t *testing.T) {
 	})
 
 	t.Run("get group", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/v1/social/groups/1", nil)
+		req, err := http.NewRequest("GET", "/v1/groups/1", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -314,7 +314,7 @@ func TestGroupFlow(t *testing.T) {
 		}
 
 		inputJSON, _ := json.Marshal(input)
-		req, err := http.NewRequest("PATCH", "/v1/social/groups/1", strings.NewReader(string(inputJSON)))
+		req, err := http.NewRequest("PATCH", "/v1/groups/1", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -346,7 +346,7 @@ func TestGroupFlow(t *testing.T) {
 		}
 
 		inputJSON, _ := json.Marshal(input)
-		req, err := http.NewRequest("POST", "/v1/social/groups/invite", strings.NewReader(string(inputJSON)))
+		req, err := http.NewRequest("POST", "/v1/groups/invite", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -373,7 +373,7 @@ func TestGroupFlow(t *testing.T) {
 	})
 
 	t.Run("get user groups", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/v1/social/groups", nil)
+		req, err := http.NewRequest("GET", "/v1/groups", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -405,7 +405,7 @@ func TestGroupFlow(t *testing.T) {
 		}
 
 		inputJSON, _ := json.Marshal(input)
-		req, err := http.NewRequest("PATCH", "/v1/social/groups/membership", strings.NewReader(string(inputJSON)))
+		req, err := http.NewRequest("PATCH", "/v1/groups/membership", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}

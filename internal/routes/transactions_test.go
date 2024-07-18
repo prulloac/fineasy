@@ -52,7 +52,7 @@ func TestAccountsFlow(t *testing.T) {
 		}
 
 		inputJSON, _ := json.Marshal(input)
-		req, err := http.NewRequest("POST", "/v1/transactions/accounts", strings.NewReader(string(inputJSON)))
+		req, err := http.NewRequest("POST", "/v1/accounts", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -74,7 +74,7 @@ func TestAccountsFlow(t *testing.T) {
 	})
 
 	t.Run("get accounts", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/v1/transactions/accounts", nil)
+		req, err := http.NewRequest("GET", "/v1/accounts", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -101,7 +101,7 @@ func TestAccountsFlow(t *testing.T) {
 	})
 
 	t.Run("get account", func(t *testing.T) {
-		req, err := http.NewRequest("GET", "/v1/transactions/accounts/1", nil)
+		req, err := http.NewRequest("GET", "/v1/accounts/1", nil)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -130,7 +130,7 @@ func TestAccountsFlow(t *testing.T) {
 		}
 
 		inputJSON, _ := json.Marshal(input)
-		req, err := http.NewRequest("PATCH", "/v1/transactions/accounts/1", strings.NewReader(string(inputJSON)))
+		req, err := http.NewRequest("PATCH", "/v1/accounts/1", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -161,6 +161,37 @@ func TestAccountsFlow(t *testing.T) {
 		}
 	})
 
+	container.Terminate(ctx)
+}
+
+func TestBudgetsFlow(t *testing.T) {
+	ctx := context.Background()
+	container := tests.StartPostgresContainer(ctx, t)
+	per := persistence.NewPersistence()
+	authRepo := auth.NewAuthRepository(per)
+	authRepo.CreateTables()
+	socialRepo := social.NewSocialRepository(per)
+	socialRepo.CreateTables()
+	transRepo := transactions.NewTransactionsRepository(per)
+	transRepo.CreateTables()
+	tests.LoadTestEnv()
+	handler := Run()
+	token := ""
+
+	// precondition: create a user and login
+	user := auth.RegisterInput{
+		Username: "test",
+		Email:    "test@mail.com",
+		Password: "password",
+	}
+	tests.RegisterUser(t, handler, user)
+
+	login := auth.LoginInput{
+		Email:    user.Email,
+		Password: user.Password,
+	}
+	token = tests.LoginUser(t, handler, login)
+
 	t.Run("create budget", func(t *testing.T) {
 		input := transactions.CreateBudgetInput{
 			Name:      "test budget",
@@ -172,7 +203,7 @@ func TestAccountsFlow(t *testing.T) {
 		}
 
 		inputJSON, _ := json.Marshal(input)
-		req, err := http.NewRequest("POST", "/v1/transactions/budgets", strings.NewReader(string(inputJSON)))
+		req, err := http.NewRequest("POST", "/v1/budgets", strings.NewReader(string(inputJSON)))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -190,6 +221,46 @@ func TestAccountsFlow(t *testing.T) {
 		if !strings.Contains(rr.Body.String(), expectedName) {
 			t.Errorf("handler returned unexpected body: got %v want %v",
 				rr.Body.String(), expectedName)
+		}
+	})
+
+	t.Run("get budgets", func(t *testing.T) {
+		req, err := http.NewRequest("GET", "/v1/budgets", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		req.Header.Set("Authorization", token)
+		rr := httptest.NewRecorder()
+		handler.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("handler returned wrong status code: got %v want %v",
+				status, http.StatusOK)
+		}
+
+		expectedName := `"name":"test budget"`
+		if !strings.Contains(rr.Body.String(), expectedName) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedName)
+		}
+
+		expectedAmount := `"amount":"1000.00"`
+		if !strings.Contains(rr.Body.String(), expectedAmount) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedAmount)
+		}
+
+		expectedStartDate := `"start_date":"2021-01-01"`
+		if !strings.Contains(rr.Body.String(), expectedStartDate) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedStartDate)
+		}
+
+		expectedEndDate := `"end_date":"2021-12-31"`
+		if !strings.Contains(rr.Body.String(), expectedEndDate) {
+			t.Errorf("handler returned unexpected body: got %v want %v",
+				rr.Body.String(), expectedEndDate)
 		}
 	})
 

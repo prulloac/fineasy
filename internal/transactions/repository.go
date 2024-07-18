@@ -1,7 +1,6 @@
 package transactions
 
 import (
-	"log"
 	"time"
 
 	p "github.com/prulloac/fineasy/internal/persistence"
@@ -111,7 +110,7 @@ func (r *TransactionsRepository) GetAccountsByUserID(uid uint) ([]Account, error
 	return accounts, nil
 }
 
-func (r *TransactionsRepository) GetAccountByID(id int) (*Account, error) {
+func (r *TransactionsRepository) GetAccountByID(id uint) (*Account, error) {
 	account := &Account{}
 	err := r.Persistence.SQL().QueryRow(`
 		SELECT id, name, group_id, currency, balance, created_by, created_at, updated_at
@@ -121,7 +120,7 @@ func (r *TransactionsRepository) GetAccountByID(id int) (*Account, error) {
 	return account, err
 }
 
-func (r *TransactionsRepository) UserHasAccessToAccount(uid, aid int) (bool, error) {
+func (r *TransactionsRepository) UserHasAccessToAccount(uid, aid uint) (bool, error) {
 	var count int
 	err := r.Persistence.SQL().QueryRow(`
 		SELECT COUNT(*)
@@ -130,14 +129,12 @@ func (r *TransactionsRepository) UserHasAccessToAccount(uid, aid int) (bool, err
 		WHERE a.id = $1 AND ug.user_id = $2
 	`, aid, uid).Scan(&count)
 	if err != nil {
-		log.Printf("⚠️ Error checking user access to account: %s", err)
 		return false, err
 	}
-	log.Printf("🔒 User %d has access to account %d: %t", uid, aid, count > 0)
 	return count > 0, nil
 }
 
-func (r *TransactionsRepository) UpdateAccount(id int, name, currency string, balance float64) (*Account, error) {
+func (r *TransactionsRepository) UpdateAccount(id uint, name, currency string, balance float64) (*Account, error) {
 	account := &Account{}
 	err := r.Persistence.SQL().QueryRow(`
 		UPDATE accounts
@@ -156,4 +153,26 @@ func (r *TransactionsRepository) CreateBudget(name, currency string, amount floa
 		RETURNING id, name, account_id, currency, amount, created_by, start_date, end_date, created_at, updated_at
 	`, name, accountID, currency, amount, createdBy, startDate, endDate).Scan(&budget.ID, &budget.Name, &budget.AccountID, &budget.Currency, &budget.Amount, &budget.CreatedBy, &budget.StartDate, &budget.EndDate, &budget.CreatedAt, &budget.UpdatedAt)
 	return budget, err
+}
+
+func (r *TransactionsRepository) GetBudgetsByUserID(uid uint) ([]Budget, error) {
+	rows, err := r.Persistence.SQL().Query(`
+		SELECT id, name, account_id, currency, amount, created_by, start_date, end_date, created_at, updated_at
+		FROM budgets
+		WHERE created_by = $1
+	`, uid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var budgets []Budget
+	for rows.Next() {
+		var budget Budget
+		if err := rows.Scan(&budget.ID, &budget.Name, &budget.AccountID, &budget.Currency, &budget.Amount, &budget.CreatedBy, &budget.StartDate, &budget.EndDate, &budget.CreatedAt, &budget.UpdatedAt); err != nil {
+			return nil, err
+		}
+		budgets = append(budgets, budget)
+	}
+	return budgets, nil
 }

@@ -5,15 +5,16 @@ import (
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
 	"github.com/prulloac/fineasy/internal/persistence"
-	"github.com/prulloac/fineasy/pkg"
+	"github.com/prulloac/fineasy/pkg/validations"
 )
 
 func Run() *gin.Engine {
 	server := gin.Default()
 
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		v.RegisterValidation("past_time", pkg.PastTime)
-		v.RegisterValidation("uuid7", pkg.UUID7)
+		v.RegisterValidation("past_time", validations.PastTime)
+		v.RegisterValidation("uuid7", validations.UUID7)
+		v.RegisterValidation("date", validations.Date)
 	}
 
 	v1 := server.Group("/v1")

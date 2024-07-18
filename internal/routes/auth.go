@@ -49,7 +49,7 @@ func (c *AuthController) RegisterPaths(rg *gin.RouterGroup) {
 	g := rg.Group("/auth")
 	g.POST("/register", c.register)
 	g.POST("/login", c.login)
-	g.GET("/me", m.SecureRequest, c.me)
+	g.GET("/me", m.CaptureTokenFromHeader, c.me)
 }
 
 func (a *AuthController) register(c *gin.Context) {
@@ -84,12 +84,8 @@ func (a *AuthController) login(c *gin.Context) {
 }
 
 func (a *AuthController) me(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "missing token"})
-		return
-	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 	user, err := a.authService.Me(uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

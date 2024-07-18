@@ -26,40 +26,37 @@ func (c *TransactionController) Close() {
 }
 
 func (c *TransactionController) RegisterPaths(rg *gin.RouterGroup) {
-	g := rg.Group("/transactions", m.SecureRequest)
-	ac := g.Group("/accounts")
-	ac.POST("", c.createAccount)
-	ac.GET("", c.getAccounts)
-	ac.GET("/:id", c.getAccount)
-	ac.PATCH("/:id", c.updateAccount)
+	a := rg.Group("/accounts")
+	a.Use(m.CaptureTokenFromHeader)
+	a.POST("", c.createAccount)
+	a.GET("", c.getAccounts)
+	a.GET("/:id", c.getAccount)
+	a.PATCH("/:id", c.updateAccount)
 	// g.DELETE("accounts/:id", c.deleteAccount)
-	b := g.Group("/budgets")
+	b := rg.Group("/budgets")
+	b.Use(m.CaptureTokenFromHeader)
 	b.POST("", c.createBudget)
-	// g.GET("", c.getBudgets)
-	// g.GET("/:id", c.getBudget)
-	// g.PATCH("/:id", c.updateBudget)
-	// g.DELETE("/:id", c.deleteBudget)
-	tx := g.Group("/transactions")
-	tx.POST("", c.createTransaction)
-	// g.GET("transactions", c.getTransactions)
-	// g.GET("transactions/:id", c.getTransaction)
-	// g.PATCH("transactions/:id", c.updateTransaction)
-	// g.DELETE("transactions/:id", c.deleteTransaction)
+	b.GET("", c.getBudgets)
+	// b.GET("/:id", c.getBudget)
+	// b.PATCH("/:id", c.updateBudget)
+	// b.DELETE("/:id", c.deleteBudget)
+	t := rg.Group("/transactions")
+	t.Use(m.CaptureTokenFromHeader)
+	t.POST("", c.createTransaction)
+	// t.GET("transactions", c.getTransactions)
+	// t.GET("transactions/:id", c.getTransaction)
+	// t.PATCH("transactions/:id", c.updateTransaction)
+	// t.DELETE("transactions/:id", c.deleteTransaction)
 }
 
 func (t *TransactionController) createAccount(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
-
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 	var i transactions.CreateAccountInput
 	if err := c.ShouldBindJSON(&i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
 	out, err := t.transactionService.CreateAccount(i.Name, i.Currency, i.GroupID, uint(uid))
 	if err != nil {
@@ -71,15 +68,10 @@ func (t *TransactionController) createAccount(c *gin.Context) {
 }
 
 func (t *TransactionController) getAccounts(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
-	uid := uint(token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64))
-
-	out, err := t.transactionService.GetAccounts(uid)
+	out, err := t.transactionService.GetAccounts(uint(uid))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -89,20 +81,16 @@ func (t *TransactionController) getAccounts(c *gin.Context) {
 }
 
 func (t *TransactionController) getAccount(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	uid := int(token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64))
 
-	out, err := t.transactionService.GetAccountByID(id, uid)
+	out, err := t.transactionService.GetAccountByID(uint(id), uint(uid))
 	if err != nil {
 		if strings.Contains(err.Error(), "forbidden") {
 			c.JSON(http.StatusForbidden, gin.H{"error": err.Error()})
@@ -117,13 +105,9 @@ func (t *TransactionController) getAccount(c *gin.Context) {
 }
 
 func (t *TransactionController) updateAccount(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
-	uid := int(token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64))
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -141,7 +125,7 @@ func (t *TransactionController) updateAccount(c *gin.Context) {
 		return
 	}
 
-	out, err := t.transactionService.UpdateAccount(i.Name, i.Currency, balance, id, uid)
+	out, err := t.transactionService.UpdateAccount(i.Name, i.Currency, balance, uint(id), uint(uid))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -151,18 +135,15 @@ func (t *TransactionController) updateAccount(c *gin.Context) {
 }
 
 func (t *TransactionController) createBudget(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	var i transactions.CreateBudgetInput
 	if err := c.ShouldBindJSON(&i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+
 	amount, err := strconv.ParseFloat(i.Amount, 64)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -186,6 +167,19 @@ func (t *TransactionController) createBudget(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, out)
+}
+
+func (t *TransactionController) getBudgets(c *gin.Context) {
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
+
+	out, err := t.transactionService.GetBudgets(uint(uid))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, out)
 }
 
 func (t *TransactionController) createTransaction(c *gin.Context) {

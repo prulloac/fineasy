@@ -24,9 +24,9 @@ func (c *SocialController) Close() {
 }
 
 func (c *SocialController) RegisterPaths(rg *gin.RouterGroup) {
-	p := rg.Group("/social", m.SecureRequest)
 	// friends
-	f := p.Group("/friends")
+	f := rg.Group("/friends")
+	f.Use(m.CaptureTokenFromHeader)
 	f.GET("", c.getFriendships)
 	f.GET(":id", c.getFriendhip)
 	f.DELETE(":id", c.deleteFriendship)
@@ -34,7 +34,8 @@ func (c *SocialController) RegisterPaths(rg *gin.RouterGroup) {
 	f.GET("/requests", c.getPendingFriendships)
 	f.PATCH("/requests/:id", c.acceptFriendship)
 	// groups
-	g := p.Group("/groups")
+	g := rg.Group("/groups")
+	g.Use(m.CaptureTokenFromHeader)
 	g.POST("", c.createGroup)
 	g.GET("", c.getUserGroups)
 	g.GET(":id", c.getUserGroup)
@@ -44,12 +45,8 @@ func (c *SocialController) RegisterPaths(rg *gin.RouterGroup) {
 }
 
 func (s *SocialController) addFriendship(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	var i social.AddFriendInput
 	if err := c.ShouldBindJSON(&i); err != nil {
@@ -74,12 +71,8 @@ func (s *SocialController) addFriendship(c *gin.Context) {
 }
 
 func (s *SocialController) getFriendships(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	out, err := s.socialService.GetFriendships(uint(uid))
 	if err != nil {
@@ -91,17 +84,14 @@ func (s *SocialController) getFriendships(c *gin.Context) {
 }
 
 func (s *SocialController) getFriendhip(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
 	out, err := s.socialService.GetFriendship(uint(id), uint(uid))
 	if err != nil {
@@ -113,12 +103,8 @@ func (s *SocialController) getFriendhip(c *gin.Context) {
 }
 
 func (s *SocialController) getPendingFriendships(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	out, err := s.socialService.GetPendingFriendships(uint(uid))
 	if err != nil {
@@ -130,12 +116,8 @@ func (s *SocialController) getPendingFriendships(c *gin.Context) {
 }
 
 func (s *SocialController) acceptFriendship(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	var i social.UpdateFriendRequestInput
 	if err := c.ShouldBindJSON(&i); err != nil {
@@ -162,12 +144,8 @@ func (s *SocialController) acceptFriendship(c *gin.Context) {
 }
 
 func (s *SocialController) deleteFriendship(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	var i social.DeleteFriendInput
 	if err := c.ShouldBindJSON(&i); err != nil {
@@ -193,18 +171,14 @@ func (s *SocialController) deleteFriendship(c *gin.Context) {
 }
 
 func (s *SocialController) createGroup(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	var i social.CreateGroupInput
 	if err := c.ShouldBindJSON(&i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 	out, err := s.socialService.CreateGroup(i.Name, uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -215,12 +189,8 @@ func (s *SocialController) createGroup(c *gin.Context) {
 }
 
 func (s *SocialController) getUserGroups(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	out, err := s.socialService.GetUserGroups(uint(uid))
 	if err != nil {
@@ -232,11 +202,8 @@ func (s *SocialController) getUserGroups(c *gin.Context) {
 }
 
 func (s *SocialController) getUserGroup(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -244,7 +211,6 @@ func (s *SocialController) getUserGroup(c *gin.Context) {
 		return
 	}
 
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 	out, err := s.socialService.GetGroupByID(uint(id), uint(uid))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -255,11 +221,8 @@ func (s *SocialController) getUserGroup(c *gin.Context) {
 }
 
 func (s *SocialController) updateGroup(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	var i social.UpdateGroupInput
 	if err := c.ShouldBindJSON(&i); err != nil {
@@ -271,7 +234,6 @@ func (s *SocialController) updateGroup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 
 	out, err := s.socialService.UpdateGroup(i.Name, uint(id), uint(uid))
 	if err != nil {
@@ -283,11 +245,8 @@ func (s *SocialController) updateGroup(c *gin.Context) {
 }
 
 func (s *SocialController) inviteUserGroup(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	var i social.JoinGroupInput
 	if err := c.ShouldBindJSON(&i); err != nil {
@@ -298,7 +257,6 @@ func (s *SocialController) inviteUserGroup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
 		return
 	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 	if i.UserID == uint(uid) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot invite yourself"})
 		return
@@ -314,11 +272,8 @@ func (s *SocialController) inviteUserGroup(c *gin.Context) {
 }
 
 func (s *SocialController) updateUserGroup(c *gin.Context) {
-	token, exists := c.Get("token")
-	if !exists {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
-		return
-	}
+	token := m.GetClientToken(c)
+	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
 
 	var i social.JoinGroupInput
 	if err := c.ShouldBindJSON(&i); err != nil {
@@ -329,7 +284,6 @@ func (s *SocialController) updateUserGroup(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid status"})
 		return
 	}
-	uid := token.(*jwt.Token).Claims.(jwt.MapClaims)["uid"].(float64)
 	if i.UserID != uint(uid) {
 		c.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
 		return

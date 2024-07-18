@@ -3,6 +3,7 @@ package middleware
 import (
 	"crypto/rsa"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -12,7 +13,9 @@ import (
 	"github.com/prulloac/fineasy/internal/auth"
 )
 
-func SecureRequest(c *gin.Context) {
+var logger = log.New(os.Stdout, "[Middleware] ", log.LUTC)
+
+func CaptureTokenFromHeader(c *gin.Context) {
 	tokenString := c.GetHeader("Authorization")
 	if tokenString == "" {
 		c.AbortWithStatusJSON(401, gin.H{"error": "missing Authorization header"})
@@ -51,6 +54,15 @@ func GenerateBearerToken(user auth.User) string {
 	return "Bearer " + tokenString
 }
 
+func GetClientToken(c *gin.Context) *jwt.Token {
+	token, exists := c.Get("token")
+	if !exists {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "client user not found"})
+		return nil
+	}
+	return token.(*jwt.Token)
+}
+
 func loadSignKey() *rsa.PrivateKey {
 	if os.Getenv("JWT_PRIVATE_KEY") == "" {
 		panic("JWT_PRIVATE_KEY not set")
@@ -58,7 +70,7 @@ func loadSignKey() *rsa.PrivateKey {
 	privateKey := os.Getenv("JWT_PRIVATE_KEY")
 	signKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privateKey))
 	if err != nil {
-		log.Fatalf("error parsing private key: %s", err)
+		logger.Fatalf("error parsing private key: %s", err)
 	}
 	return signKey
 }
@@ -70,7 +82,7 @@ func loadVerifyKey() *rsa.PublicKey {
 	publicKey := os.Getenv("JWT_PUBLIC_KEY")
 	verifyKey, err := jwt.ParseRSAPublicKeyFromPEM([]byte(publicKey))
 	if err != nil {
-		log.Fatalf("error parsing public key: %s", err)
+		logger.Fatalf("error parsing public key: %s", err)
 	}
 	return verifyKey
 }
