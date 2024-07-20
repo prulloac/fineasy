@@ -50,7 +50,7 @@ func (b *Budget) String() string {
 
 type Transaction struct {
 	ID              uint
-	Category        string
+	CategoryID      string
 	Currency        string
 	CurrencyRate    float64
 	TransactionType pkg.TransactionType
@@ -71,6 +71,23 @@ func (t *Transaction) String() string {
 	out, err := json.Marshal(t)
 	if err != nil {
 		return fmt.Sprintf("%+v", t.Description)
+	}
+	return string(out)
+}
+
+type Category struct {
+	ID          uint
+	Name        string
+	Icon        string
+	Color       string
+	Description string
+	Order       uint
+}
+
+func (c *Category) String() string {
+	out, err := json.Marshal(c)
+	if err != nil {
+		return fmt.Sprintf("%+v", c.Name)
 	}
 	return string(out)
 }

@@ -23,7 +23,7 @@ func (c *SocialController) Close() {
 	c.socialService.Close()
 }
 
-func (c *SocialController) RegisterPaths(rg *gin.RouterGroup) {
+func (c *SocialController) RegisterEndpoints(rg *gin.RouterGroup) {
 	// friends
 	f := rg.Group("/friends")
 	f.Use(m.CaptureTokenFromHeader)

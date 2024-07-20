@@ -2,17 +2,18 @@ package persistence
 
 import (
 	"database/sql"
-	"log"
 	"os"
 
 	godotenv "github.com/joho/godotenv"
+	"github.com/prulloac/fineasy/pkg/logging"
 
 	_ "github.com/lib/pq"
 )
 
 type Persistence struct {
-	db     *sql.DB
-	logger *log.Logger
+	sql           *sql.DB
+	logger        *logging.Logger
+	debugInstance *Persistence
 }
 
 func NewPersistence() *Persistence {
@@ -27,20 +28,46 @@ func NewPersistence() *Persistence {
 		panic(err)
 	}
 
-	instance := &Persistence{db: db, logger: log.New(os.Stdout, "[Persistence] ", log.LUTC)}
+	if os.Getenv("ENV") != "production" {
+		db.SetMaxIdleConns(1)
+		db.SetMaxOpenConns(1)
+		db.SetConnMaxLifetime(0)
+	}
 
-	instance.logger.Println("Database Successfully connected!")
+	instance := &Persistence{sql: db, logger: logging.NewLogger()}
+	instance.logger.Infof("Database Successfully connected!")
+	instance.logger.SetDepth(3)
+	instance.debugInstance = &Persistence{sql: db, logger: logging.NewLoggerWithLevel(logging.Debug)}
 	return instance
 }
 
 func (p *Persistence) Close() {
-	err := p.db.Close()
+	err := p.sql.Close()
 	if err != nil {
 		panic(err)
 	}
-	p.logger.Println("Database Successfully disconnected!")
+	p.logger.Infof("Database Successfully disconnected!")
 }
 
 func (p *Persistence) SQL() *sql.DB {
-	return p.db
+	return p.sql
+}
+
+func (p *Persistence) Debug() *Persistence {
+	return p.debugInstance
+}
+
+func (p *Persistence) Exec(query string, args ...any) (sql.Result, error) {
+	p.logger.Debugf("Executing query: %s", query)
+	return p.sql.Exec(query, args...)
+}
+
+func (p *Persistence) QueryRow(query string, args ...any) *sql.Row {
+	p.logger.Debugf("Querying row: %s", query)
+	return p.sql.QueryRow(query, args...)
+}
+
+func (p *Persistence) Query(query string, args ...any) (*sql.Rows, error) {
+	p.logger.Debugf("Querying: %s", query)
+	return p.sql.Query(query, args...)
 }

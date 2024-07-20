@@ -11,14 +11,15 @@ import (
 )
 
 type Service struct {
-	repo   *TransactionsRepository
-	social *social.SocialRepository
+	repo   *Repository
+	social *social.Repository
 }
 
 func NewService(persistence *p.Persistence) *Service {
 	instance := &Service{}
-	instance.repo = NewTransactionsRepository(persistence)
-	instance.social = social.NewSocialRepository(persistence)
+	instance.repo = NewRepository(persistence)
+	instance.social = social.NewRepository(persistence)
+	instance.repo.CreateTables()
 	return instance
 }
 
@@ -29,6 +30,9 @@ func (s *Service) Close() {
 
 func (s *Service) CreateAccount(name string, currency string, gid, uid uint) (*CreateAccountOutput, error) {
 	ugs, err := s.social.GetUserGroupsByUserID(uid)
+	if err != nil {
+		return nil, err
+	}
 	if !slices.ContainsFunc(ugs, func(i social.UserGroup) bool {
 		return i.GroupID == gid
 	}) {

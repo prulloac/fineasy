@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"github.com/prulloac/fineasy/internal/auth"
+	"github.com/prulloac/fineasy/pkg/logging"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -27,7 +27,7 @@ type PostgresContainer struct {
 	DB        *sql.DB
 }
 
-var logger = log.New(os.Stdout, "[TestContainers] ", log.LUTC)
+var logger = logging.NewLoggerWithPrefix("[TestContainers]")
 
 func StartPostgresContainer(ctx context.Context, t *testing.T) PostgresContainer {
 	container, err := postgres.Run(ctx, "postgres:alpine",
@@ -67,7 +67,7 @@ func StartPostgresContainer(ctx context.Context, t *testing.T) PostgresContainer
 	return PostgresContainer{container, connectionString, container.Terminate, db}
 }
 
-func RegisterUser(t *testing.T, handler *gin.Engine, input auth.RegisterInput) {
+func RegisterUser(t *testing.T, handler *gin.Engine, input auth.InternalUserRegisterInput) {
 	inputJSON, _ := json.Marshal(input)
 	req, err := http.NewRequest("POST", "/v1/auth/register", strings.NewReader(string(inputJSON)))
 	if err != nil {

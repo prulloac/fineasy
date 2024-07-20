@@ -25,7 +25,7 @@ func (c *TransactionController) Close() {
 	c.transactionService.Close()
 }
 
-func (c *TransactionController) RegisterPaths(rg *gin.RouterGroup) {
+func (c *TransactionController) RegisterEndpoints(rg *gin.RouterGroup) {
 	a := rg.Group("/accounts")
 	a.Use(m.CaptureTokenFromHeader)
 	a.POST("", c.createAccount)

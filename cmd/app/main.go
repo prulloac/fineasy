@@ -1,12 +1,11 @@
 package main
 
 import (
-	"log"
-
 	server "github.com/prulloac/fineasy/internal/routes"
+	"github.com/prulloac/fineasy/pkg/logging"
 )
 
 func main() {
-	log.Println("Server is running...")
-	server.Run()
+	logging.Println("Server is running...")
+	server.Server().Run(":8080")
 }

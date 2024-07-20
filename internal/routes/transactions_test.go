@@ -9,8 +9,6 @@ import (
 	"testing"
 
 	"github.com/prulloac/fineasy/internal/auth"
-	"github.com/prulloac/fineasy/internal/persistence"
-	"github.com/prulloac/fineasy/internal/social"
 	"github.com/prulloac/fineasy/internal/transactions"
 	"github.com/prulloac/fineasy/tests"
 )
@@ -18,20 +16,12 @@ import (
 func TestAccountsFlow(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
-	per := persistence.NewPersistence()
-	authRepo := auth.NewAuthRepository(per)
-	authRepo.CreateTables()
-	socialRepo := social.NewSocialRepository(per)
-	socialRepo.CreateTables()
-	transRepo := transactions.NewTransactionsRepository(per)
-	transRepo.CreateTables()
-	tests.LoadTestEnv()
-	handler := Run()
+	tests.LoadTestKeys()
+	handler := Server()
 	token := ""
 
 	// precondition: create a user and login
-	user := auth.RegisterInput{
-		Username: "test",
+	user := auth.InternalUserRegisterInput{
 		Email:    "user@email.com",
 		Password: "password",
 	}
@@ -167,20 +157,12 @@ func TestAccountsFlow(t *testing.T) {
 func TestBudgetsFlow(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
-	per := persistence.NewPersistence()
-	authRepo := auth.NewAuthRepository(per)
-	authRepo.CreateTables()
-	socialRepo := social.NewSocialRepository(per)
-	socialRepo.CreateTables()
-	transRepo := transactions.NewTransactionsRepository(per)
-	transRepo.CreateTables()
-	tests.LoadTestEnv()
-	handler := Run()
+	tests.LoadTestKeys()
+	handler := Server()
 	token := ""
 
 	// precondition: create a user and login
-	user := auth.RegisterInput{
-		Username: "test",
+	user := auth.InternalUserRegisterInput{
 		Email:    "test@mail.com",
 		Password: "password",
 	}

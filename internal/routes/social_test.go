@@ -3,43 +3,31 @@ package routes
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"github.com/prulloac/fineasy/internal/auth"
-	"github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/internal/social"
-	"github.com/prulloac/fineasy/internal/transactions"
 	"github.com/prulloac/fineasy/tests"
 )
 
 func TestFriendshipFlow(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
-	per := persistence.NewPersistence()
-	a := auth.NewAuthRepository(per)
-	a.CreateTables()
-	s := social.NewSocialRepository(per)
-	s.CreateTables()
-	tx := transactions.NewTransactionsRepository(per)
-	tx.CreateTables()
-	tests.LoadTestEnv()
-	handler := Run()
+	tests.LoadTestKeys()
+	handler := Server()
 	token := ""
 
 	// precondition: create two users and login with one
-	user1 := auth.RegisterInput{
-		Username: "test",
+	user1 := auth.InternalUserRegisterInput{
 		Email:    "user1@email.com",
 		Password: "password",
 	}
 	tests.RegisterUser(t, handler, user1)
 
-	user2 := auth.RegisterInput{
-		Username: "test",
+	user2 := auth.InternalUserRegisterInput{
 		Email:    "user2@email.com",
 		Password: "password",
 	}
@@ -76,8 +64,6 @@ func TestFriendshipFlow(t *testing.T) {
 		expectedUserID := `"user_id":1`
 		expectedFriendID := `"friend_id":2`
 		expectedStatus := `"status":"Pending"`
-
-		log.Printf("🔥 %v", rr.Body.String())
 
 		if !strings.Contains(rr.Body.String(), expectedUserID) || !strings.Contains(rr.Body.String(), expectedFriendID) || !strings.Contains(rr.Body.String(), expectedStatus) {
 			t.Errorf("handler returned unexpected body: got %v",
@@ -126,8 +112,6 @@ func TestFriendshipFlow(t *testing.T) {
 		expectedFriendID := `"friend_id":2`
 		expectedStatus := `"status":"Pending"`
 
-		log.Printf("🔥 %v", rr.Body.String())
-
 		if !strings.Contains(rr.Body.String(), expectedUserID) || !strings.Contains(rr.Body.String(), expectedFriendID) || !strings.Contains(rr.Body.String(), expectedStatus) {
 			t.Errorf("handler returned unexpected body: got %v",
 				rr.Body.String())
@@ -156,8 +140,6 @@ func TestFriendshipFlow(t *testing.T) {
 
 		expectedStatus := `"status":"Accepted"`
 
-		log.Printf("🔥 %v", rr.Body.String())
-
 		if !strings.Contains(rr.Body.String(), expectedStatus) {
 			t.Errorf("handler returned unexpected body: got %v, want %v",
 				rr.Body.String(), expectedStatus)
@@ -183,8 +165,6 @@ func TestFriendshipFlow(t *testing.T) {
 		expectedFriendID := `"friend_id":2`
 		expectedRelationType := `"relation_type":"Contact"`
 
-		log.Printf("🔥 %v", rr.Body.String())
-
 		if !strings.Contains(rr.Body.String(), expectedUserID) || !strings.Contains(rr.Body.String(), expectedFriendID) || !strings.Contains(rr.Body.String(), expectedRelationType) {
 			t.Errorf("handler returned unexpected body: got %v",
 				rr.Body.String())
@@ -197,25 +177,18 @@ func TestFriendshipFlow(t *testing.T) {
 func TestGroupFlow(t *testing.T) {
 	ctx := context.Background()
 	container := tests.StartPostgresContainer(ctx, t)
-	per := persistence.NewPersistence()
-	authRepo := auth.NewAuthRepository(per)
-	authRepo.CreateTables()
-	socialRepo := social.NewSocialRepository(per)
-	socialRepo.CreateTables()
-	tests.LoadTestEnv()
-	handler := Run()
+	tests.LoadTestKeys()
+	handler := Server()
 	token := ""
 
 	// precondition: create two users and login with one
-	user1 := auth.RegisterInput{
-		Username: "test",
+	user1 := auth.InternalUserRegisterInput{
 		Email:    "user1@email.com",
 		Password: "password",
 	}
 	tests.RegisterUser(t, handler, user1)
 
-	user2 := auth.RegisterInput{
-		Username: "test",
+	user2 := auth.InternalUserRegisterInput{
 		Email:    "user2@email.com",
 		Password: "password",
 	}
@@ -251,8 +224,6 @@ func TestGroupFlow(t *testing.T) {
 		expectedName := `"name":"Test Group"`
 		expectedCreatedBy := `"created_by":1`
 
-		log.Printf("🔥 %v", rr.Body.String())
-
 		if !strings.Contains(rr.Body.String(), expectedName) || !strings.Contains(rr.Body.String(), expectedCreatedBy) {
 			t.Errorf("handler returned unexpected body: got %v",
 				rr.Body.String())
@@ -277,8 +248,6 @@ func TestGroupFlow(t *testing.T) {
 
 		expectedName := `"group":"Test Group"`
 		expectedCreatedBy := `"created_by":1`
-
-		log.Printf("🔥 %v", rr.Body.String())
 
 		if !strings.Contains(rr.Body.String(), expectedName) || !strings.Contains(rr.Body.String(), expectedCreatedBy) {
 			t.Errorf("handler returned unexpected body: got %v",
@@ -330,8 +299,6 @@ func TestGroupFlow(t *testing.T) {
 
 		expectedName := `"name":"Updated Group"`
 
-		log.Printf("🔥 %v", rr.Body.String())
-
 		if !strings.Contains(rr.Body.String(), expectedName) {
 			t.Errorf("handler returned unexpected body: got %v",
 				rr.Body.String())
@@ -364,8 +331,6 @@ func TestGroupFlow(t *testing.T) {
 		expectedUserID := `"user_id":2`
 		expectedStatus := `"status":"Invited"`
 
-		log.Printf("🔥 %v", rr.Body.String())
-
 		if !strings.Contains(rr.Body.String(), expectedGroupID) || !strings.Contains(rr.Body.String(), expectedUserID) || !strings.Contains(rr.Body.String(), expectedStatus) {
 			t.Errorf("handler returned unexpected body: got %v",
 				rr.Body.String())
@@ -388,8 +353,6 @@ func TestGroupFlow(t *testing.T) {
 		}
 
 		expectedGroup := `"group":"Updated Group"`
-
-		log.Printf("🔥 %v", rr.Body.String())
 
 		if !strings.Contains(rr.Body.String(), expectedGroup) {
 			t.Errorf("handler returned unexpected body: got %v",
@@ -422,8 +385,6 @@ func TestGroupFlow(t *testing.T) {
 		expectedGroupID := `"group_id":1`
 		expectedUserID := `"user_id":1`
 		expectedStatus := `"status":"Left"`
-
-		log.Printf("🔥 %v", rr.Body.String())
 
 		if !strings.Contains(rr.Body.String(), expectedGroupID) || !strings.Contains(rr.Body.String(), expectedUserID) || !strings.Contains(rr.Body.String(), expectedStatus) {
 			t.Errorf("handler returned unexpected body: got %v",

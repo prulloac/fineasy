@@ -6,14 +6,14 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
-	"log"
 	random "math/rand"
 
+	"github.com/prulloac/fineasy/pkg/logging"
 	"golang.org/x/crypto/sha3"
 )
 
 func HashPassword(password, salt string, algorithm Algorithm) string {
-	log.Printf("🔐 Hashing password with algorithm: %s", algorithm)
+	logging.Printf("🔐 Hashing password with algorithm: %s", algorithm)
 	var out string
 	switch algorithm {
 	case SHA256:
@@ -49,7 +49,7 @@ func hashWithSHA256(password string, salt string) string {
 	concatenated := []byte(password + salt)
 	ch := sha256.Sum256([]byte(concatenated))
 	out := hex.EncodeToString(ch[:])
-	log.Printf("🔐 Hashed password: %s", out)
+	logging.Printf("🔐 Hashed password: %s", out)
 	return out
 }
 
@@ -57,7 +57,7 @@ func hashWithSHA512(password string, salt string) string {
 	concatenated := []byte(password + salt)
 	ch := sha512.Sum512([]byte(concatenated))
 	out := hex.EncodeToString(ch[:])
-	log.Printf("🔐 Hashed password: %s", out)
+	logging.Printf("🔐 Hashed password: %s", out)
 	return out
 }
 
@@ -65,7 +65,7 @@ func hashWithSHA3_256(password string, salt string) string {
 	concatenated := []byte(password + salt)
 	ch := sha3.Sum256([]byte(concatenated))
 	out := hex.EncodeToString(ch[:])
-	log.Printf("🔐 Hashed password: %s", out)
+	logging.Printf("🔐 Hashed password: %s", out)
 	return out
 }
 
@@ -73,6 +73,6 @@ func hashWithSHA3_512(password string, salt string) string {
 	concatenated := []byte(password + salt)
 	ch := sha3.Sum512([]byte(concatenated))
 	out := hex.EncodeToString(ch[:])
-	log.Printf("🔐 Hashed password: %s", out)
+	logging.Printf("🔐 Hashed password: %s", out)
 	return out
 }

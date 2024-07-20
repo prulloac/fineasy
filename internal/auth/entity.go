@@ -12,7 +12,6 @@ import (
 type User struct {
 	pkg.Model
 	Hash              string
-	Username          string
 	Email             string
 	ValidatedAt       sql.NullTime
 	Disabled          bool
@@ -23,7 +22,7 @@ type User struct {
 func (u *User) String() string {
 	out, err := json.Marshal(u)
 	if err != nil {
-		return fmt.Sprintf("%+v", u.Username)
+		return fmt.Sprintf("%+v", u.Email)
 	}
 	return string(out)
 }

@@ -73,3 +73,8 @@ schema/up:
 .PHONY: schema/down
 schema/down:
 	$(CURDIR)/scripts/schema.sh down
+
+## pg/up: start the PostgreSQL database container for local development
+.PHONY: pg/up
+pg/up:
+	$(CURDIR)/scripts/pg_up.sh

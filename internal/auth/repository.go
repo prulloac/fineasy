@@ -1,33 +1,30 @@
 package auth
 
 import (
-	"log"
-	"os"
-
 	"github.com/google/uuid"
 	p "github.com/prulloac/fineasy/internal/persistence"
 	"github.com/prulloac/fineasy/pkg"
+	"github.com/prulloac/fineasy/pkg/logging"
 )
 
-type AuthRepository struct {
+type Repository struct {
 	Persistence *p.Persistence
-	logger      *log.Logger
+	logger      *logging.Logger
 }
 
-func NewAuthRepository(persistence *p.Persistence) *AuthRepository {
-	return &AuthRepository{persistence, log.New(os.Stdout, "[AuthRepository] ", log.LUTC)}
+func NewRepository(persistence *p.Persistence) *Repository {
+	return &Repository{persistence, logging.NewLoggerWithPrefix("[Repository]")}
 }
 
-func (a *AuthRepository) Close() {
+func (a *Repository) Close() {
 	a.Persistence.Close()
 }
 
-func (a *AuthRepository) CreateTables() error {
-	r, err := a.Persistence.SQL().Exec(`
+func (a *Repository) CreateTables() error {
+	r, err := a.Persistence.Exec(`
 	CREATE TABLE IF NOT EXISTS users (
 		id SERIAL PRIMARY KEY,
 		hash uuid NOT NULL,
-		username VARCHAR(255) NOT NULL,
 		email VARCHAR(255) NOT NULL,
 		validated_at TIMESTAMP,
 		disabled BOOLEAN NOT NULL DEFAULT FALSE,
@@ -106,8 +103,8 @@ func (a *AuthRepository) CreateTables() error {
 	return nil
 }
 
-func (a *AuthRepository) DropTables() error {
-	_, err := a.Persistence.SQL().Exec(`
+func (a *Repository) DropTables() error {
+	_, err := a.Persistence.Exec(`
 	DROP TABLE IF EXISTS user_sessions;
 	DROP TABLE IF EXISTS external_login_tokens;
 	DROP TABLE IF EXISTS external_logins;
@@ -119,9 +116,9 @@ func (a *AuthRepository) DropTables() error {
 	return err
 }
 
-func (a *AuthRepository) getUserIDByEmail(email string) (uint, error) {
+func (a *Repository) getUserIDByEmail(email string) (uint, error) {
 	var uid uint
-	err := a.Persistence.SQL().QueryRow(`
+	err := a.Persistence.QueryRow(`
 	SELECT id FROM users WHERE email = $1
 	`, email).Scan(&uid)
 	if err != nil {
@@ -131,94 +128,84 @@ func (a *AuthRepository) getUserIDByEmail(email string) (uint, error) {
 	return uid, nil
 }
 
-func (a *AuthRepository) getSaltAndAlgorithmByUserID(uid uint) (string, pkg.Algorithm, error) {
+func (a *Repository) getSaltAndAlgorithmByUserID(uid uint) (string, pkg.Algorithm, error) {
 	// salt, algorithm,
 	var sa struct {
 		PasswordSalt string
 		Algorithm    pkg.Algorithm
 	}
-	err := a.Persistence.SQL().QueryRow(`
+	err := a.Persistence.QueryRow(`
 	SELECT password_salt, algorithm FROM internal_logins WHERE user_id = $1
 	`, uid).
 		Scan(&sa.PasswordSalt, &sa.Algorithm)
 	return sa.PasswordSalt, sa.Algorithm, err
 }
 
-func (a *AuthRepository) getInternalLoginUserByEmailAndPassword(email string, hashedPassword string) (User, error) {
+func (a *Repository) getInternalLoginUserByEmailAndPassword(email string, hashedPassword string) (*User, error) {
 	var user User
-	err := a.Persistence.SQL().QueryRow(`
+	err := a.Persistence.QueryRow(`
 	SELECT 
-		users.id, users.hash, users.username, users.email, users.validated_at, users.disabled, users.created_at, users.updated_at, users.deleted_at
+		users.id, users.hash, users.email, users.validated_at, users.disabled, users.created_at, users.updated_at, users.deleted_at
 	FROM users
 	JOIN internal_logins ON users.id = internal_logins.user_id
 	WHERE users.email = $1 AND internal_logins.password = $2
 	`, email, hashedPassword).
-		Scan(&user.ID, &user.Hash, &user.Username, &user.Email, &user.ValidatedAt, &user.Disabled, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
-	return user, err
+		Scan(&user.ID, &user.Hash, &user.Email, &user.ValidatedAt, &user.Disabled, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
+	return &user, err
 }
 
-func (a *AuthRepository) createUser(username string, email string) (User, error) {
+func (a *Repository) createUser(email string) (*User, error) {
 	hash, err := uuid.NewV7()
 	if err != nil {
-		return User{}, err
+		return nil, err
 	}
 	var user User
-	err = a.Persistence.SQL().QueryRow(`
+	err = a.Persistence.QueryRow(`
 	INSERT INTO users 
-	(username, email, hash) VALUES ($1, $2, $3)
-	RETURNING id, hash, username, email, validated_at, disabled, created_at, updated_at, deleted_at
-	`, username, email, hash.String()).
-		Scan(&user.ID, &user.Hash, &user.Username, &user.Email, &user.ValidatedAt, &user.Disabled, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
-	return user, err
+	(email, hash) VALUES ($1, $2)
+	RETURNING id, hash, email, validated_at, disabled, created_at, updated_at, deleted_at
+	`, email, hash.String()).
+		Scan(&user.ID, &user.Hash, &user.Email, &user.ValidatedAt, &user.Disabled, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
+	return &user, err
 }
 
-func (a *AuthRepository) createInternalLogin(uid uint, hashedPassword string, salt string, algorithm pkg.Algorithm) (InternalLogin, error) {
+func (a *Repository) createInternalLogin(uid uint, hashedPassword string, salt string, algorithm pkg.Algorithm) (*InternalLogin, error) {
 	var il InternalLogin
-	err := a.Persistence.SQL().QueryRow(`
+	err := a.Persistence.QueryRow(`
 	INSERT INTO internal_logins 
 	(user_id, password, password_salt, algorithm) VALUES ($1, $2, $3, $4) 
 	RETURNING id, user_id, password, password_salt, algorithm, password_last_updated_at, login_attempts, last_login_attempt, last_login_success, created_at, updated_at, deleted_at
 	`, uid, hashedPassword, salt, algorithm).
 		Scan(&il.ID, &il.UserID, &il.Password, &il.PasswordSalt, &il.Algorithm, &il.PasswordLastUpdatedAt, &il.LoginAttempts, &il.LastLoginAttempt, &il.LastLoginSuccess, &il.CreatedAt, &il.UpdatedAt, &il.DeletedAt)
-	return il, err
+	return &il, err
 }
 
-func (a *AuthRepository) increaseLoginAttempts(uid uint) error {
+func (a *Repository) increaseLoginAttempts(uid uint) error {
 	var attempts int
-	err := a.Persistence.SQL().QueryRow(`
+	err := a.Persistence.QueryRow(`
 	UPDATE internal_logins SET login_attempts = login_attempts + 1 WHERE user_id = $1 RETURNING login_attempts
 	`, uid).Scan(&attempts)
 	return err
 }
 
-func (a *AuthRepository) isAccountLocked(uid uint) (bool, error) {
+func (a *Repository) isAccountLocked(uid uint) (bool, error) {
 	var disabled bool
-	err := a.Persistence.SQL().QueryRow(`
+	err := a.Persistence.QueryRow(`
 	SELECT disabled FROM users WHERE id = $1
 	`, uid).Scan(&disabled)
 	return disabled, err
 }
 
-func (a *AuthRepository) logUserSession(uid uint, ip string, userAgent string) (UserSession, error) {
+func (a *Repository) logUserSession(uid uint, ip string, userAgent string) (*UserSession, error) {
 	token, err := uuid.NewV7()
 	if err != nil {
-		return UserSession{}, err
+		return nil, err
 	}
 	var session UserSession
-	err = a.Persistence.SQL().QueryRow(`
+	err = a.Persistence.QueryRow(`
 	INSERT INTO user_sessions
 	(user_id, login_ip, user_agent, session_token) VALUES ($1, $2, $3, $4)
 	RETURNING id, user_id, login_ip, user_agent, session_token, logged_in_at, logged_out_at, created_at, updated_at
 	`, uid, ip, userAgent, token.String()).Scan(&session.ID, &session.UserID, &session.LoginIP, &session.UserAgent, &session.SessionToken, &session.LoggedInAt, &session.LoggedOutAt, &session.CreatedAt, &session.UpdatedAt)
-	return session, err
-}
-
-func (a *AuthRepository) getUserByID(uid uint) (User, error) {
-	var user User
-	err := a.Persistence.SQL().QueryRow(`
-	SELECT id, hash, username, email, validated_at, disabled, created_at, updated_at, deleted_at
-	FROM users WHERE id = $1
-	`, uid).
-		Scan(&user.ID, &user.Hash, &user.Username, &user.Email, &user.ValidatedAt, &user.Disabled, &user.CreatedAt, &user.UpdatedAt, &user.DeletedAt)
-	return user, err
+	return &session, err
 }

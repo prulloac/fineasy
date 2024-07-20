@@ -1,7 +1,6 @@
 package social
 
 import (
-	"log"
 	"slices"
 
 	e "github.com/prulloac/fineasy/internal/errors"
@@ -9,12 +8,13 @@ import (
 )
 
 type Service struct {
-	repo *SocialRepository
+	repo *Repository
 }
 
 func NewService(per *p.Persistence) *Service {
 	instance := &Service{}
-	instance.repo = NewSocialRepository(per)
+	instance.repo = NewRepository(per)
+	instance.repo.CreateTables()
 	return instance
 }
 
@@ -198,7 +198,6 @@ func (s *Service) UpdateGroup(name string, gid, uid uint) (*GroupBriefOutput, er
 
 	if !userIsInGroup {
 		err := &e.ErrForbidden{}
-		log.Printf("⚠️ Error updating group: %s", err)
 		return nil, err
 	}
 
@@ -226,7 +225,6 @@ func (s *Service) UpdateUserGroup(status string, gid, uid uint) (*UserGroupOutpu
 		ug, err = s.repo.LeaveGroup(gid, uid)
 	default:
 		err := &e.ErrBadRequest{}
-		log.Printf("⚠️ Error joining group: %s", err)
 		return nil, err
 	}
 	if err != nil {

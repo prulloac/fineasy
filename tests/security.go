@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-func LoadTestEnv() {
+func LoadTestKeys() {
 	privateKey := `
 -----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEA4f5wg5l2hKsTeNem/V41fGnJm6gOdrj8ym3rFkEU/wT8RDtn

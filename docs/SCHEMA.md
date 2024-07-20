@@ -95,22 +95,15 @@ erDiagram
 ```mermaid
 
 erDiagram
-    FRIENDS {
-        id int
-        user_id int
-        friend_id int
-        created_at datetime
-        updated_at datetime
-        relation_type int
-    }
-
-    FRIEND_REQUESTS {
+    FRIENDSHIPS {
         id int
         user_id int
         friend_id int
         status int
+        relation_type int
         created_at datetime
         updated_at datetime
+        deleted_at datetime
     }
 
     GROUPS {
@@ -131,9 +124,8 @@ erDiagram
         status int
     }
 
+    USERS ||--|{ FRIENDSHIPS : contains
     GROUPS ||--|{ USER_GROUPS : contains
-    USERS ||--|{ FRIENDS : contains
-    USERS ||--|{ FRIEND_REQUESTS : contains
     USERS ||--|{ USER_GROUPS : contains
 
 ```
@@ -186,6 +178,15 @@ erDiagram
         updated_at datetime
     }
 
+    CATEGORIES {
+        id int
+        name varchar
+        icon varchar
+        color varchar
+        description text
+        order int
+    }
+
     c1[CURRENCIES]
     c2[CURRENCIES]
 
@@ -234,42 +235,33 @@ erDiagram
 
 ```
 
-## User Preferences
+## User Preferences & Data
 
 ```mermaid
 
 erDiagram
+
     USER_PREFERENCES {
         id int
         user_id int
-        theme varchar
-        language varchar
-        entries json
+        key varchar
+        value text
         upserted_at datetime
     }
 
-    GROUP_PREFERENCES {
-        id int
-        group_id int
-        theme varchar
-        language varchar
-        entries json
-        upserted_at datetime
-    }
-
-    CATEGORIES {
+    USERDATA {
         id int
         user_id int
-        group_id int
-        name varchar
-        icon varchar
-        color varchar
-        description text
-        order int
-        created_at datetime
-        updated_at datetime
-        deleted_at datetime
+        avatar_url varchar
+        display_name varchar
+        currency varchar
+        language varchar
+        timezone varchar
+        upserted_at datetime
     }
+
+    USERDATA ||--|| USERS : contains
+    USER_PREFERENCES }|--|| USERS : contains
 
 ```
 

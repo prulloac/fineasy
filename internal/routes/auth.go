@@ -1,23 +1,21 @@
 package routes
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/prulloac/fineasy/internal/auth"
 	m "github.com/prulloac/fineasy/internal/middleware"
 	p "github.com/prulloac/fineasy/internal/persistence"
+	"github.com/prulloac/fineasy/internal/preferences"
 	"github.com/prulloac/fineasy/internal/social"
 	"github.com/prulloac/fineasy/internal/transactions"
 	"github.com/prulloac/fineasy/pkg"
+	"github.com/prulloac/fineasy/pkg/logging"
 )
 
 type AuthController struct {
-	authService         *auth.Service
-	socialService       *social.Service
-	transactionsService *transactions.Service
+	authService *auth.Service
 }
 
 func NewAuthController(persistence *p.Persistence) *AuthController {
@@ -25,41 +23,43 @@ func NewAuthController(persistence *p.Persistence) *AuthController {
 	authService := auth.NewService(persistence)
 	socialService := social.NewService(persistence)
 	transactionsService := transactions.NewService(persistence)
-	authService.NewUserCallbacks(func(u auth.User) {
+	preferencesService := preferences.NewService(persistence)
+	authService.NewUserCallbacks(func(u *auth.User) {
 		g, err := socialService.CreateGroup("Personal", u.ID)
 		if err != nil {
-			log.Printf("⚠️ Error creating group: %s", err)
+			logging.Printf("⚠️ Error creating group: %s", err)
 		}
 		_, err = transactionsService.CreateAccount("Personal", "USD", g.ID, u.ID)
 		if err != nil {
-			log.Printf("⚠️ Error creating account: %s", err)
+			logging.Printf("⚠️ Error creating account: %s", err)
+		}
+		_, err = preferencesService.CreateUserData(u.ID)
+		if err != nil {
+			logging.Printf("⚠️ Error creating user data: %s", err)
 		}
 	})
-	instance = &AuthController{authService: authService, socialService: socialService, transactionsService: transactionsService}
+	instance = &AuthController{authService: authService}
 	return instance
 }
 
 func (c *AuthController) Close() {
 	c.authService.Close()
-	c.socialService.Close()
-	c.transactionsService.Close()
 }
 
-func (c *AuthController) RegisterPaths(rg *gin.RouterGroup) {
+func (c *AuthController) RegisterEndpoints(rg *gin.RouterGroup) {
 	g := rg.Group("/auth")
 	g.POST("/register", c.register)
 	g.POST("/login", c.login)
-	g.GET("/me", m.CaptureTokenFromHeader, c.me)
 }
 
 func (a *AuthController) register(c *gin.Context) {
-	var i auth.RegisterInput
+	var i auth.InternalUserRegisterInput
 	if err := c.ShouldBindJSON(&i); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 	rm := pkg.GetRequestMeta(c.Request)
-	user, err := a.authService.Register(i.Username, i.Email, i.Password, rm)
+	user, err := a.authService.Register(i.Email, i.Password, rm)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -81,15 +81,4 @@ func (a *AuthController) login(c *gin.Context) {
 	}
 	c.Writer.Header().Set("Authorization", m.GenerateBearerToken(user))
 	c.JSON(http.StatusOK, out)
-}
-
-func (a *AuthController) me(c *gin.Context) {
-	token := m.GetClientToken(c)
-	uid := token.Claims.(jwt.MapClaims)["uid"].(float64)
-	user, err := a.authService.Me(uint(uid))
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, user)
 }

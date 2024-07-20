@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"crypto/rsa"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -11,9 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/prulloac/fineasy/internal/auth"
+	"github.com/prulloac/fineasy/pkg/logging"
 )
 
-var logger = log.New(os.Stdout, "[Middleware] ", log.LUTC)
+var logger = logging.NewLoggerWithPrefix("[Middleware]")
 
 func CaptureTokenFromHeader(c *gin.Context) {
 	tokenString := c.GetHeader("Authorization")
@@ -37,17 +37,16 @@ func CaptureTokenFromHeader(c *gin.Context) {
 	c.Next()
 }
 
-func GenerateBearerToken(user auth.User) string {
+func GenerateBearerToken(user *auth.User) string {
 	now := time.Now()
 	claims := jwt.MapClaims{
-		"sub":   user.Hash,
-		"iss":   "fineasy",
-		"aud":   "fineasy",
-		"exp":   now.Add(time.Hour * 24).Unix(),
-		"iat":   now.Unix(),
-		"uid":   user.ID,
-		"mail":  user.Email,
-		"uname": user.Username,
+		"sub":  user.Hash,
+		"iss":  "fineasy",
+		"aud":  "fineasy",
+		"exp":  now.Add(time.Hour * 24).Unix(),
+		"iat":  now.Unix(),
+		"uid":  user.ID,
+		"mail": user.Email,
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
 	tokenString, _ := token.SignedString(loadSignKey())

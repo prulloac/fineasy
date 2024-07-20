@@ -6,20 +6,20 @@ import (
 	p "github.com/prulloac/fineasy/internal/persistence"
 )
 
-type TransactionsRepository struct {
+type Repository struct {
 	Persistence *p.Persistence
 }
 
-func NewTransactionsRepository(persistence *p.Persistence) *TransactionsRepository {
-	return &TransactionsRepository{persistence}
+func NewRepository(persistence *p.Persistence) *Repository {
+	return &Repository{persistence}
 }
 
-func (r *TransactionsRepository) Close() {
+func (r *Repository) Close() {
 	r.Persistence.Close()
 }
 
-func (r *TransactionsRepository) CreateTables() error {
-	_, err := r.Persistence.SQL().Exec(`
+func (r *Repository) CreateTables() error {
+	_, err := r.Persistence.Exec(`
 		CREATE TABLE IF NOT EXISTS accounts (
 			id SERIAL PRIMARY KEY,
 			created_by INT NOT NULL,
@@ -69,8 +69,8 @@ func (r *TransactionsRepository) CreateTables() error {
 	return err
 }
 
-func (r *TransactionsRepository) DropTable() error {
-	_, err := r.Persistence.SQL().Exec(`
+func (r *Repository) DropTables() error {
+	_, err := r.Persistence.Exec(`
 		DROP TABLE IF EXISTS transactions;
 		DROP TABLE IF EXISTS budgets;
 		DROP TABLE IF EXISTS accounts;
@@ -78,9 +78,9 @@ func (r *TransactionsRepository) DropTable() error {
 	return err
 }
 
-func (r *TransactionsRepository) CreateAccount(name string, currency string, groupID, createdBy uint) (*Account, error) {
+func (r *Repository) CreateAccount(name string, currency string, groupID, createdBy uint) (*Account, error) {
 	account := &Account{}
-	err := r.Persistence.SQL().QueryRow(`
+	err := r.Persistence.QueryRow(`
 		INSERT INTO accounts (name, group_id, currency, balance, created_by, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
 		RETURNING id, name, group_id, currency, balance, created_by, created_at, updated_at
@@ -88,8 +88,8 @@ func (r *TransactionsRepository) CreateAccount(name string, currency string, gro
 	return account, err
 }
 
-func (r *TransactionsRepository) GetAccountsByUserID(uid uint) ([]Account, error) {
-	rows, err := r.Persistence.SQL().Query(`
+func (r *Repository) GetAccountsByUserID(uid uint) ([]Account, error) {
+	rows, err := r.Persistence.Query(`
 		SELECT id, name, group_id, currency, balance, created_by, created_at, updated_at
 		FROM accounts
 		WHERE created_by = $1
@@ -110,9 +110,9 @@ func (r *TransactionsRepository) GetAccountsByUserID(uid uint) ([]Account, error
 	return accounts, nil
 }
 
-func (r *TransactionsRepository) GetAccountByID(id uint) (*Account, error) {
+func (r *Repository) GetAccountByID(id uint) (*Account, error) {
 	account := &Account{}
-	err := r.Persistence.SQL().QueryRow(`
+	err := r.Persistence.QueryRow(`
 		SELECT id, name, group_id, currency, balance, created_by, created_at, updated_at
 		FROM accounts
 		WHERE id = $1
@@ -120,9 +120,9 @@ func (r *TransactionsRepository) GetAccountByID(id uint) (*Account, error) {
 	return account, err
 }
 
-func (r *TransactionsRepository) UserHasAccessToAccount(uid, aid uint) (bool, error) {
+func (r *Repository) UserHasAccessToAccount(uid, aid uint) (bool, error) {
 	var count int
-	err := r.Persistence.SQL().QueryRow(`
+	err := r.Persistence.QueryRow(`
 		SELECT COUNT(*)
 		FROM accounts a
 		JOIN user_groups ug ON a.group_id = ug.group_id
@@ -134,9 +134,9 @@ func (r *TransactionsRepository) UserHasAccessToAccount(uid, aid uint) (bool, er
 	return count > 0, nil
 }
 
-func (r *TransactionsRepository) UpdateAccount(id uint, name, currency string, balance float64) (*Account, error) {
+func (r *Repository) UpdateAccount(id uint, name, currency string, balance float64) (*Account, error) {
 	account := &Account{}
-	err := r.Persistence.SQL().QueryRow(`
+	err := r.Persistence.QueryRow(`
 		UPDATE accounts
 		SET name = $1, currency = $2, balance = $3, updated_at = NOW()
 		WHERE id = $4
@@ -145,9 +145,9 @@ func (r *TransactionsRepository) UpdateAccount(id uint, name, currency string, b
 	return account, err
 }
 
-func (r *TransactionsRepository) CreateBudget(name, currency string, amount float64, startDate, endDate time.Time, accountID, createdBy uint) (*Budget, error) {
+func (r *Repository) CreateBudget(name, currency string, amount float64, startDate, endDate time.Time, accountID, createdBy uint) (*Budget, error) {
 	budget := &Budget{}
-	err := r.Persistence.SQL().QueryRow(`
+	err := r.Persistence.QueryRow(`
 		INSERT INTO budgets (name, account_id, currency, amount, created_by, start_date, end_date, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 		RETURNING id, name, account_id, currency, amount, created_by, start_date, end_date, created_at, updated_at
@@ -155,8 +155,8 @@ func (r *TransactionsRepository) CreateBudget(name, currency string, amount floa
 	return budget, err
 }
 
-func (r *TransactionsRepository) GetBudgetsByUserID(uid uint) ([]Budget, error) {
-	rows, err := r.Persistence.SQL().Query(`
+func (r *Repository) GetBudgetsByUserID(uid uint) ([]Budget, error) {
+	rows, err := r.Persistence.Query(`
 		SELECT id, name, account_id, currency, amount, created_by, start_date, end_date, created_at, updated_at
 		FROM budgets
 		WHERE created_by = $1

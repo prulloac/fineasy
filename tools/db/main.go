@@ -2,20 +2,34 @@ package main
 
 import (
 	"flag"
-	"log"
 
 	"github.com/prulloac/fineasy/internal/auth"
 	"github.com/prulloac/fineasy/internal/persistence"
+	"github.com/prulloac/fineasy/internal/preferences"
 	"github.com/prulloac/fineasy/internal/social"
+	"github.com/prulloac/fineasy/internal/transactions"
+	"github.com/prulloac/fineasy/pkg/logging"
 )
+
+type schemaOperation interface {
+	CreateTables() error
+	DropTables() error
+}
+
+var operations = []schemaOperation{}
 
 func main() {
 	p := persistence.NewPersistence()
+	operations = []schemaOperation{auth.NewRepository(p),
+		social.NewRepository(p),
+		transactions.NewRepository(p),
+		preferences.NewRepository(p),
+	}
 	flag.Parse()
 	defer p.Close()
 	if flag.Arg(0) == "down" {
 		schemaDown(p)
-		log.Println("Database schema has been dropped.")
+		logging.Println("Database schema has been dropped.")
 		return
 	} else if flag.Arg(0) == "reset" {
 		schemaDown(p)
@@ -23,20 +37,10 @@ func main() {
 	} else if flag.Arg(0) == "up" {
 		schemaUp(p)
 	}
-	log.Println("Database schema is up to date.")
-}
-
-type schemaOperation interface {
-	CreateTables() error
-	DropTables() error
+	logging.Println("Database schema is up to date.")
 }
 
 func schemaUp(p *persistence.Persistence) {
-	var operations = []schemaOperation{
-		auth.NewAuthRepository(p),
-		social.NewSocialRepository(p),
-	}
-
 	for _, operation := range operations {
 		err := operation.CreateTables()
 		if err != nil {
@@ -46,11 +50,6 @@ func schemaUp(p *persistence.Persistence) {
 }
 
 func schemaDown(p *persistence.Persistence) {
-	var operations = []schemaOperation{
-		auth.NewAuthRepository(p),
-		social.NewSocialRepository(p),
-	}
-
 	for _, operation := range operations {
 		err := operation.DropTables()
 		if err != nil {
