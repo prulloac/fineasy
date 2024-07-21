@@ -46,6 +46,7 @@ Core:
 | **Personal Tracking** | Users can add personal trackings. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Shared Tracking** | Users can add shared trackings. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Budgeting** | Users can set budgets for their income, expenses and savings. | `Not Yet ⏳` | `Not Yet ⏳` |
+| **Categories** | Select categories for trackings. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Revert Actions** | Users can revert their actions. | `Not Yet ⏳` | `Not Yet ⏳` |
 
 Conveniences
@@ -57,7 +58,6 @@ Conveniences
 | **Filter** | Users can filter their income, expenses and savings. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Dashboard** | Users can view their income, expenses and savings in a dashboard. | `Not Yet ⏳` | `Not Yet ⏳` |
 | **Reports** | Users can view reports of their income, expenses and savings. | `Not Yet ⏳` | `Not Yet ⏳` |
-| **Categories** | Select categories for trackings. | `Not Yet ⏳` | `Not Yet ⏳` |
 
 Usability
 

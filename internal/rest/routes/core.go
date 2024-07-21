@@ -37,6 +37,7 @@ func (c *CoreController) RegisterEndpoints(rg *gin.RouterGroup) {
 	f.POST("/requests", c.addFriendship)
 	f.GET("/requests", c.getPendingFriendships)
 	f.PATCH("/requests/:id", c.acceptFriendship)
+
 	// groups
 	g := rg.Group("/groups")
 	g.Use(rest.CaptureTokenFromHeader)
@@ -46,6 +47,7 @@ func (c *CoreController) RegisterEndpoints(rg *gin.RouterGroup) {
 	g.PATCH(":id", c.updateGroup)
 	g.POST("/invite", c.inviteUserGroup)
 	g.PATCH("/membership", c.updateUserGroup)
+
 	// accounts
 	a := rg.Group("/accounts")
 	a.Use(rest.CaptureTokenFromHeader)
@@ -54,6 +56,8 @@ func (c *CoreController) RegisterEndpoints(rg *gin.RouterGroup) {
 	a.GET("/:id", c.getAccount)
 	a.PATCH("/:id", c.updateAccount)
 	// g.DELETE("accounts/:id", c.deleteAccount)
+
+	// budgets
 	b := rg.Group("/budgets")
 	b.Use(rest.CaptureTokenFromHeader)
 	b.POST("", c.createBudget)
@@ -61,6 +65,8 @@ func (c *CoreController) RegisterEndpoints(rg *gin.RouterGroup) {
 	// b.GET("/:id", c.getBudget)
 	// b.PATCH("/:id", c.updateBudget)
 	// b.DELETE("/:id", c.deleteBudget)
+
+	// transactions
 	t := rg.Group("/transactions")
 	t.Use(rest.CaptureTokenFromHeader)
 	t.POST("", c.createTransaction)
@@ -68,6 +74,17 @@ func (c *CoreController) RegisterEndpoints(rg *gin.RouterGroup) {
 	// t.GET("transactions/:id", c.getTransaction)
 	// t.PATCH("transactions/:id", c.updateTransaction)
 	// t.DELETE("transactions/:id", c.deleteTransaction)
+
+	// categories
+	// c.GET("categories", c.getCategories)
+
+	// user data
+	// u := rg.Group("/users")
+	// u.GET("me", c.getCurrentUserData)
+	// u.PATCH("me", c.updateUserData)
+	// u.GET("me/preferences", c.getUserPreferences)
+	// u.PATCH("me/preferences", c.updateUserPreferences)
+	// u.GET(":id", c.getUserData)
 }
 
 func (s *CoreController) addFriendship(c *gin.Context) {

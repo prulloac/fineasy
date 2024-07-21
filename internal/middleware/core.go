@@ -12,9 +12,8 @@ import (
 )
 
 type CoreService struct {
-	repository       *core.CoreRepository
-	logger           *logging.Logger
-	newUserCallbacks []NewUserCallback
+	repository *core.CoreRepository
+	logger     *logging.Logger
 }
 
 func NewCoreService(repository *core.CoreRepository) *CoreService {

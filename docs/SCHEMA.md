@@ -194,7 +194,7 @@ erDiagram
     CATEGORIES ||--o{ TRANSACTIONS : contains
     BUDGETS ||--o{ TRANSACTIONS : contains
     GROUPS ||--|{ ACCOUNTS : contains
-    USERDATA ||--|{ FRIENDSHIPS : contains
+    USERDATA ||--o{ FRIENDSHIPS : contains
     USERDATA ||--|{ USER_GROUPS : contains
     GROUPS ||--|{ USER_GROUPS : contains
     USER_PREFERENCES }|--|| USERDATA : contains

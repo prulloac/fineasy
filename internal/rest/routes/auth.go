@@ -27,6 +27,10 @@ func (c *AuthController) RegisterEndpoints(rg *gin.RouterGroup) {
 	g := rg.Group("/auth")
 	g.POST("/register", c.register)
 	g.POST("/login", c.login)
+	// g.POST("/logout", c.logout)
+	// g.POST("/refresh", c.refreshSession)
+	// g.POST("/forgot", c.forgotPassword)
+	// g.POST("/password", c.changePassword)
 }
 
 func (a *AuthController) register(c *gin.Context) {
