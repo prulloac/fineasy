@@ -90,7 +90,7 @@ erDiagram
 
 ```
 
-## Social
+## Core Functionalities
 
 ```mermaid
 
@@ -109,7 +109,6 @@ erDiagram
     GROUPS {
         id int
         name varchar
-        member_count int
         created_by int
         created_at datetime
         updated_at datetime
@@ -124,19 +123,6 @@ erDiagram
         status int
     }
 
-    USERS ||--|{ FRIENDSHIPS : contains
-    GROUPS ||--|{ USER_GROUPS : contains
-    USERS ||--|{ USER_GROUPS : contains
-
-```
-
-
-
-## Transactions
-
-```mermaid
-
-erDiagram
     ACCOUNTS {
         id int
         created_by int
@@ -187,16 +173,32 @@ erDiagram
         order int
     }
 
-    c1[CURRENCIES]
-    c2[CURRENCIES]
+    USER_PREFERENCES {
+        user_id int
+        key varchar
+        value text
+        upserted_at datetime
+    }
+
+    USERDATA {
+        user_id int
+        avatar_url varchar
+        display_name varchar
+        currency varchar
+        language varchar
+        timezone varchar
+        upserted_at datetime
+    }
 
     ACCOUNTS ||--|{ BUDGETS : contains
     CATEGORIES ||--o{ TRANSACTIONS : contains
     BUDGETS ||--o{ TRANSACTIONS : contains
-    USERS ||--|{ TRANSACTIONS : contains
     GROUPS ||--|{ ACCOUNTS : contains
-    c1 ||--|{ ACCOUNTS : contains
-    c2 ||--|{ TRANSACTIONS : contains
+    USERDATA ||--|{ FRIENDSHIPS : contains
+    USERDATA ||--|{ USER_GROUPS : contains
+    GROUPS ||--|{ USER_GROUPS : contains
+    USER_PREFERENCES }|--|| USERDATA : contains
+    
 
 ```
 
@@ -232,36 +234,6 @@ erDiagram
 
     CURRENCIES ||--|{ EXCHANGE_RATES : contains
     CURRENCY_CONVERSION_PROVIDERS }|--|{ CURRENCIES : ""
-
-```
-
-## User Preferences & Data
-
-```mermaid
-
-erDiagram
-
-    USER_PREFERENCES {
-        id int
-        user_id int
-        key varchar
-        value text
-        upserted_at datetime
-    }
-
-    USERDATA {
-        id int
-        user_id int
-        avatar_url varchar
-        display_name varchar
-        currency varchar
-        language varchar
-        timezone varchar
-        upserted_at datetime
-    }
-
-    USERDATA ||--|| USERS : contains
-    USER_PREFERENCES }|--|| USERS : contains
 
 ```
 

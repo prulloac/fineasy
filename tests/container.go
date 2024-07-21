@@ -13,7 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
-	"github.com/prulloac/fineasy/internal/auth"
+	"github.com/prulloac/fineasy/internal/rest/dto"
 	"github.com/prulloac/fineasy/pkg/logging"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
@@ -67,7 +67,7 @@ func StartPostgresContainer(ctx context.Context, t *testing.T) PostgresContainer
 	return PostgresContainer{container, connectionString, container.Terminate, db}
 }
 
-func RegisterUser(t *testing.T, handler *gin.Engine, input auth.InternalUserRegisterInput) {
+func RegisterUser(t *testing.T, handler *gin.Engine, input dto.InternalUserRegisterInput) {
 	inputJSON, _ := json.Marshal(input)
 	req, err := http.NewRequest("POST", "/v1/auth/register", strings.NewReader(string(inputJSON)))
 	if err != nil {
@@ -83,7 +83,7 @@ func RegisterUser(t *testing.T, handler *gin.Engine, input auth.InternalUserRegi
 	}
 }
 
-func LoginUser(t *testing.T, handler *gin.Engine, input auth.LoginInput) string {
+func LoginUser(t *testing.T, handler *gin.Engine, input dto.LoginInput) string {
 	inputJSON, _ := json.Marshal(input)
 	req, err := http.NewRequest("POST", "/v1/auth/login", strings.NewReader(string(inputJSON)))
 
