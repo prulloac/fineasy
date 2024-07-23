@@ -87,7 +87,6 @@ erDiagram
     LOGIN_TOKENS }|--|| USERS : contains
     INTERNAL_LOGINS |o--|| USERS : contains
     USERS ||--|{ USER_SESSIONS : contains
-
 ```
 
 ## Core Functionalities
@@ -95,12 +94,10 @@ erDiagram
 ```mermaid
 
 erDiagram
-    FRIENDSHIPS {
+    CONTACTLISTS {
         id int
         user_id int
-        friend_id int
-        status int
-        relation_type int
+        contact_id int
         created_at datetime
         updated_at datetime
         deleted_at datetime
@@ -194,12 +191,10 @@ erDiagram
     CATEGORIES ||--o{ TRANSACTIONS : contains
     BUDGETS ||--o{ TRANSACTIONS : contains
     GROUPS ||--|{ ACCOUNTS : contains
-    USERDATA ||--o{ FRIENDSHIPS : contains
+    USERDATA ||--o{ CONTACTLISTS : contains
     USERDATA ||--|{ USER_GROUPS : contains
     GROUPS ||--|{ USER_GROUPS : contains
     USER_PREFERENCES }|--|| USERDATA : contains
-    
-
 ```
 
 ## Currency Conversion
@@ -234,7 +229,6 @@ erDiagram
 
     CURRENCIES ||--|{ EXCHANGE_RATES : contains
     CURRENCY_CONVERSION_PROVIDERS }|--|{ CURRENCIES : ""
-
 ```
 
 ## Notifications
@@ -277,7 +271,5 @@ erDiagram
 
     NOTIFICATION_CHANNELS ||--o{ NOTIFICATION_TEMPLATES : contains
     NOTIFICATION_TYPES ||--o{ NOTIFICATION_TEMPLATES : contains
-    NOTIFICATION_TEMPLATES ||--o{ NOTIFICATIONS : contains
-
-    
+    NOTIFICATION_TEMPLATES ||--o{ NOTIFICATIONS : contains    
 ```
