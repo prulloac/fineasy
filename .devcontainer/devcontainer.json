@@ -2,8 +2,7 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/javascript-node-postgres
 {
     "name": "fineasy",
-    "dockerComposeFile": "docker-compose.yml",
-    "service": "app",
+    "image": "mcr.microsoft.com/devcontainers/base:debian",
     // Features to add to the dev container. More info: https://containers.dev/features.
     "features": {
         "ghcr.io/devcontainers/features/common-utils:2": {
@@ -78,5 +77,5 @@
     },
     // Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
     // "remoteUser": "root"
-    "workspaceFolder": "/workspace/fineasy"
+    "workspaceFolder": "/workspaces/fineasy"
 }
