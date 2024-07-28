@@ -5,9 +5,8 @@ import (
 	"os"
 
 	godotenv "github.com/joho/godotenv"
-	"github.com/prulloac/fineasy/pkg/logging"
-
 	_ "github.com/lib/pq"
+	"github.com/prulloac/fineasy/pkg/logging"
 )
 
 type Persistence struct {
