@@ -20,8 +20,3 @@ updates:
     directory: "/build"
     schedule:
       interval: "weekly"
-  # Enable version updates for Node.js projects
-  - package-ecosystem: "npm"
-    directory: "/website"
-    schedule:
-      interval: "weekly"

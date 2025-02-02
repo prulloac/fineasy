@@ -26,34 +26,26 @@
         "ghcr.io/devcontainers/features/go:1": {
             "version": "latest"
         },
-        "ghcr.io/devcontainers/features/node:1": {
-            "version": "latest"
-        },
         "ghcr.io/devcontainers/features/docker-in-docker:2": {
             "installDockerBuildx": true,
             "version": "latest",
             "dockerDashComposeVersion": "latest"
-        }
+        },
+        "ghcr.io/prulloac/devcontainer-features/bun:1.2.0": {
+            "useNpm": true
+        },
+        "ghcr.io/prulloac/devcontainer-features/chezmoi:1": {}
     },
     // Use 'postCreateCommand' to run commands after the container is created.
-    "postCreateCommand": {
-        "git-config": "git config --global --add safe.directory /workspace/fineasy",
-        "copy-backend-env": "cp build/container.env.example .env",
-        "psql": "sh .devcontainer/psql.sh"
-    },
     // "postAttachCommand": {
     // },
     // Use 'forwardPorts' to make a list of ports inside the container available locally.
     // This can be used to network with other containers or with the host.
     "forwardPorts": [
-        5432,
         8080,
         3000
     ],
     "portsAttributes": {
-        "5432": {
-            "label": "PostgreSQL"
-        },
         "8080": {
             "label": "API"
         },
